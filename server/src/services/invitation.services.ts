@@ -20,6 +20,7 @@ export const createOrganizationInvitation = async (userId: number, organizationI
         throw new AppError('Invalid data', 400)
     }
 
+    // Only allow users to create invites for the organization stored in their session.
     const existingUser = await db.query.users.findFirst({
         where: and(
             eq(users.organizationId, organizationId),
@@ -35,6 +36,7 @@ export const createOrganizationInvitation = async (userId: number, organizationI
         throw new AppError('Organization is not found', 404)
     }
 
+    // Return the invitation code so the client can share it with the invited user.
     const [createInvitation] = await db.insert(organizationInvites)
                                         .values({
                                             organizationId,

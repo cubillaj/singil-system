@@ -17,6 +17,7 @@ const cloudinaryConfig = {
 
 cloudinary.config(cloudinaryConfig)
 
+// Keep accepted formats aligned between Multer validation and Cloudinary upload options.
 const allowedImageFormats = ['jpg', 'jpeg', 'png', 'webp'] as const
 const allowedImageMimeTypes = new Set([
     'image/jpeg',
@@ -24,6 +25,7 @@ const allowedImageMimeTypes = new Set([
     'image/webp'
 ])
 
+// Store files in memory so the controller can hash the buffer before uploading.
 export const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
@@ -47,6 +49,7 @@ export const uploadImageToCloudinary = (
         throw new AppError('Cloudinary is not configured correctly', 500)
     }
 
+    // Cloudinary's upload_stream works with Multer's in-memory buffer.
     return new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
             {

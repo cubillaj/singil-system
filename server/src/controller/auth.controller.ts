@@ -16,6 +16,9 @@ function sanitizeUser(user: User) {
   return safeUser;
 }
 
+// @desc    Register a new user and create an organization for owners, or join by invitation for members
+// @route   POST /api/auth/register
+// @access  Public
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsed = RegisterSchema.safeParse(req.body);
@@ -57,6 +60,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
           throw new AppError("Invitation code is required", 400);
         }
 
+        // Invited users inherit organization and role from the invitation, not from the request body.
         const [invitation] = await tx.select({
               id: organizationInvites.id,
               expiresAt: organizationInvites.expiresAt,
@@ -97,6 +101,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       }).returning();
 
       if (invitationId) {
+        // Mark the invite as used in the same transaction so the code cannot be reused.
         await tx.update(organizationInvites)
           .set({ usedAt: new Date() })
           .where(eq(organizationInvites.id, invitationId));
@@ -121,6 +126,9 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
   }
 };
 
+// @desc    Log in a user and create an authenticated session
+// @route   POST /api/auth/login
+// @access  Public
 export const login = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsed = LoginSchema.safeParse(req.body);
@@ -159,6 +167,9 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
   }
 };
 
+// @desc    Get the currently authenticated user's profile and organization
+// @route   GET /api/auth/me
+// @access  Private
 export const me = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const session = req.authSession!;
@@ -195,6 +206,9 @@ export const me = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
+// @desc    Log out the current user and destroy their session
+// @route   POST /api/auth/logout
+// @access  Private
 export const logout = async (req: Request, res: Response, next: NextFunction) => {
   try {
     await destroyAuthSession(req);

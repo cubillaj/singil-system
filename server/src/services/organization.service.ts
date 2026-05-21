@@ -13,6 +13,7 @@ export const updateOrganization  = async (userId: number, organizationId: number
         throw new AppError(getFirstZodMessage(parsed.error), 400)
     }
     
+    // Keep PATCH-like behavior: only send fields the client actually provided.
     const updatedData = Object.fromEntries(
         Object.entries(parsed.data).filter(([_, value]) => value !== undefined)
     )
@@ -21,6 +22,7 @@ export const updateOrganization  = async (userId: number, organizationId: number
         throw new AppError('No fields to update', 400)
     }
 
+    // Confirm the user belongs to this organization and read the current logo hash for duplicate checks.
     const [existingUser] = await db.select({
                                 id: users.id,
                                 logoUrl: organizations.logoUrl,
@@ -37,6 +39,7 @@ export const updateOrganization  = async (userId: number, organizationId: number
         throw new AppError('User is not found', 404)
     }   
 
+    // Block re-uploading the exact same current image before updating the organization record.
     if (
         updatedData.logoHash !== undefined &&
         existingUser.logoHash === updatedData.logoHash
@@ -44,6 +47,7 @@ export const updateOrganization  = async (userId: number, organizationId: number
         throw new AppError('Image logo is the same, please change it.', 400)
     }
 
+    // Regenerate the slug only when the organization name changes.
     const updateValues = {
         ...updatedData,
         ...(parsed.data.name ? { slug: createSlug(parsed.data.name)} : {})

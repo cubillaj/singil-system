@@ -8,6 +8,9 @@ import { organizations } from "../db/schema.js"
 import { eq } from "drizzle-orm"
 import { AppError } from "../utils/appError.js"
 
+// @desc    Update the authenticated user's organization profile and optional logo
+// @route   PUT /api/organization/org-profile
+// @access  Private/Admin/Owner
 export const updateOrganizationController = async (req: Request, res: Response) => {
     try {
         const session = req.authSession!
