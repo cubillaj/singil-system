@@ -1,6 +1,6 @@
 {
-  "id": "1876392b-9da2-4d73-bfea-f32087ade29c",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "21df6819-6cbc-4115-9519-b72026bb0fb0",
+  "prevId": "562f8e1f-cc0f-4434-938a-a54a999b7ada",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -541,77 +541,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.otps": {
-      "name": "otps",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "otp_hash": {
-          "name": "otp_hash",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "purpose": {
-          "name": "purpose",
-          "type": "varchar(50)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'email_verification'"
-        },
-        "expires_at": {
-          "name": "expires_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "used_at": {
-          "name": "used_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "otps_user_id_users_id_fk": {
-          "name": "otps_user_id_users_id_fk",
-          "tableFrom": "otps",
-          "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.payments": {
       "name": "payments",
       "schema": "",
@@ -1067,6 +996,12 @@
         },
         "email": {
           "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "password_hash": {
+          "name": "password_hash",
           "type": "text",
           "primaryKey": false,
           "notNull": true

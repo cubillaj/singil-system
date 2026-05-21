@@ -5,8 +5,50 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1778987234318,
-      "tag": "0000_goofy_pet_avengers",
+      "when": 1779063511836,
+      "tag": "0000_normal_triathlon",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1779064101309,
+      "tag": "0001_lean_talos",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779230538389,
+      "tag": "0002_steep_reptil",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1779232800000,
+      "tag": "0003_add_user_password_hash",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1779233899427,
+      "tag": "0004_bored_lightspeed",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1779326598726,
+      "tag": "0005_wandering_the_twelve",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1779326783728,
+      "tag": "0006_modern_mojo",
       "breakpoints": true
     }
   ]

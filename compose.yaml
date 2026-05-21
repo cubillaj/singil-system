@@ -19,6 +19,11 @@ services:
     depends_on:
       - api
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
   api:
 
     build:
@@ -35,6 +40,10 @@ services:
       PORT: 5000
       NODE_ENV: development
       CLIENT_URL: http://localhost:5173
+      REDIS_URL: redis://redis:6379
+      SESSION_SECRET: ${SESSION_SECRET:-dev-session-secret-change-me}
     volumes:
       - ./server:/app
       - /app/node_modules
+    depends_on:
+      - redis
