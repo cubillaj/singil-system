@@ -6,25 +6,9 @@ import { organizationInvites, organizations, users, type User } from "../db/sche
 import { AppError } from "../utils/appError.js";
 import { createAuthSession, destroyAuthSession } from "../services/authSession.js";
 import { LoginSchema, RegisterSchema } from "../validation/auth.validation.js";
-
+import { createSlug } from "../utils/slug.js";
+import { getFirstZodMessage } from "../utils/zodErrors.js";
 const saltRounds = 12;
-
-function getFirstZodMessage(error: unknown) {
-  const parsedError = error as { flatten?: () => { fieldErrors: Record<string, string[]> } };
-  const fieldErrors = parsedError.flatten?.().fieldErrors;
-
-  return Object.values(fieldErrors ?? {}).flat()[0] ?? "Invalid data";
-}
-
-function createSlug(value: string) {
-  const slug = value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-
-  return `${slug || "organization"}-${Date.now().toString(36)}`;
-}
 
 function sanitizeUser(user: User) {
   const { passwordHash: _passwordHash, ...safeUser } = user;
@@ -190,7 +174,9 @@ export const me = async (req: Request, res: Response, next: NextFunction) => {
       with: {
         organization: {
           columns: {
-            name: true
+            name: true,
+            slug: true,
+            logoUrl: true
           }
         }
       }

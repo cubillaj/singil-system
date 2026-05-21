@@ -57,6 +57,7 @@ export const organizations = pgTable('organizations', {
   slug: varchar('slug', { length: 100}).unique(),
   logoUrl: text('logo_url'),
   plan: planEnum('plan').default('free').notNull(),
+  logoHash: text('logo_hash'),
   ...timestamps
 })
 
