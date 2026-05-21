@@ -1,8 +1,8 @@
 import bcrypt from "bcrypt";
 import { NextFunction, Request, Response } from "express";
-import { eq, ilike } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "../db/db.js";
-import { organizations, users, type User } from "../db/schema.js";
+import { organizationInvites, organizations, users, type User } from "../db/schema.js";
 import { AppError } from "../utils/appError.js";
 import { createAuthSession, destroyAuthSession } from "../services/authSession.js";
 import { LoginSchema, RegisterSchema } from "../validation/auth.validation.js";
@@ -48,13 +48,20 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       throw new AppError("Email already registered", 409);
     }
 
-    const organizationName = parsed.data.organizationName.trim();
     const passwordHash = await bcrypt.hash(parsed.data.password, saltRounds);
 
     const user = await db.transaction(async (tx) => {
       let organizationId: number;
+      let userRole = parsed.data.role;
+      let invitationId: number | null = null;
 
       if (parsed.data.role === "owner") {
+        if (!parsed.data.organizationName) {
+          throw new AppError("Organization name is required", 400);
+        }
+
+        const organizationName = parsed.data.organizationName.trim();
+
         const [organization] = await tx.insert(organizations).values({
           name: organizationName,
           slug: createSlug(organizationName),
@@ -62,16 +69,37 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 
         organizationId = organization.id;
       } else {
-        const [organization] = await tx.select({ id: organizations.id })
-          .from(organizations)
-          .where(ilike(organizations.name, organizationName))
-          .limit(1);
-
-        if (!organization) {
-          throw new AppError("Company name does not exist.", 400);
+        if (!parsed.data.code) {
+          throw new AppError("Invitation code is required", 400);
         }
 
-        organizationId = organization.id;
+        const [invitation] = await tx.select({
+              id: organizationInvites.id,
+              expiresAt: organizationInvites.expiresAt,
+              role: organizationInvites.role,
+              organizationId: organizationInvites.organizationId,
+              usedAt: organizationInvites.usedAt
+           })
+          .from(organizationInvites)
+          .where(eq(organizationInvites.code, parsed.data.code))
+          .limit(1);
+
+        if (!invitation) {
+          throw new AppError('Invalid code', 400)
+        } 
+
+        if (invitation.usedAt) {
+          throw new AppError('Invitation already used', 400)
+        }
+        
+        if(invitation.expiresAt <= new Date()) {
+          throw new AppError("Invitation Expired.", 400);
+        } 
+      
+
+        organizationId = invitation.organizationId;
+        userRole = invitation.role;
+        invitationId = invitation.id;
       }
 
       const [createdUser] = await tx.insert(users).values({
@@ -80,9 +108,15 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
         lastName: parsed.data.lastName,
         email: parsed.data.email,
         passwordHash,
-        role: parsed.data.role,
+        role: userRole,
         avatarUrl: parsed.data.avatarUrl,
       }).returning();
+
+      if (invitationId) {
+        await tx.update(organizationInvites)
+          .set({ usedAt: new Date() })
+          .where(eq(organizationInvites.id, invitationId));
+      }
 
       return createdUser;
     });

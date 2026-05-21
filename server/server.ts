@@ -8,6 +8,7 @@ import { connectRedis } from "./src/config/redis.js";
 import { sessionMiddleware } from "./src/config/session.js";
 import { errorMiddleware } from "./src/middleware/error.middleware.js";
 import authRoutes from "./src/routes/auth.routes.js";
+import invitationRoutes from './src/routes/invitation.routes.js'
 const app = express();
 
 const devOrigins = ['http://localhost:5173', 'http://localhost:5174']
@@ -24,6 +25,7 @@ app.use(express.json());
 app.use(cookieParser())
 app.use(sessionMiddleware)
 app.use("/api/auth", authRoutes)
+app.use("/api/invitation", invitationRoutes)
 
 app.use(errorMiddleware)
 

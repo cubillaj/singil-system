@@ -41,7 +41,7 @@ export const userRoleEnum = pgEnum('user_role', [
 ])
 
 export const inviteRoleEnum = pgEnum('invite_role', [
-  'admin',
+  'owner',
   'member'
 ])
 
