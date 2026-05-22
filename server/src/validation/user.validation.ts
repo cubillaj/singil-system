@@ -1,6 +1,7 @@
 import z from "zod";
 
 export const role = [
+    'system_admin',
   'owner',
   'admin',
   'member'

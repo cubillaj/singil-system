@@ -6,11 +6,15 @@ import { UpdateOrganizationSchema } from "../validation/organization.validation.
 import { organizations, users } from "../db/schema.js";
 import { createSlug } from "../utils/slug.js";
 
-export const updateOrganization  = async (userId: number, organizationId: number, data: unknown) => {
+export const updateOrganization  = async (userId: number, organizationId: number | null, data: unknown) => {
     const parsed = UpdateOrganizationSchema.safeParse(data)
 
     if(!parsed.success) {
         throw new AppError(getFirstZodMessage(parsed.error), 400)
+    }
+
+    if (organizationId === null) {
+        throw new AppError('Organization is required', 400)
     }
     
     // Keep PATCH-like behavior: only send fields the client actually provided.

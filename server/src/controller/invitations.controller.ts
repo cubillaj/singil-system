@@ -9,9 +9,9 @@ export const createInvitationController = async (req: Request, res: Response) =>
     try {
         const session = req.authSession!
 
-        const {organizationId, userId } = session
+        const {organizationId, role, userId } = session
         const invitation = await InvitationService
-                                .createOrganizationInvitation(userId, organizationId, req.body)
+                                .createOrganizationInvitation(userId, role, organizationId, req.body)
 
         return res.status(201).json({
             message: 'Successfully created invitation!',

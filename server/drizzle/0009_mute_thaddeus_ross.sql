@@ -1,0 +1,1 @@
+ALTER TYPE "public"."invite_role" ADD VALUE 'admin' BEFORE 'owner';

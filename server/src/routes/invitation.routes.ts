@@ -4,7 +4,7 @@ import { createInvitationController } from '../controller/invitations.controller
 
 const router = express.Router()
 
-// Admin and owner users can invite new members into their own organization.
-router.post('/', requireRole(['owner', 'admin']), createInvitationController)
+// Admin and owner users can invite new members into their own organization but system_admin can sen invitation to any organization.
+router.post('/', requireRole(['system_admin','owner', 'admin']), createInvitationController)
 
 export default router

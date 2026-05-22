@@ -13,7 +13,7 @@ declare global {
 declare module "express-session" {
   interface SessionData {
     userId?: number;
-    organizationId?: number;
+    organizationId?: number | null;
     role?: User["role"];
   }
 }

@@ -48,7 +48,7 @@ export const LoginSchema = z.object({
 
 export const AuthSessionSchema = z.object({
   userId: z.number().int().positive(),
-  organizationId: z.number().int().positive(),
+  organizationId: z.number().int().positive().nullable(),
   role: UserRoleSchema,
 });
 

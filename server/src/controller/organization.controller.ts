@@ -15,6 +15,10 @@ export const updateOrganizationController = async (req: Request, res: Response) 
     try {
         const session = req.authSession!
 
+        if (session.organizationId === null) {
+            throw new AppError('Organization is required', 400)
+        }
+
         const organizationData = { ...req.body}
 
         if (req.file) {

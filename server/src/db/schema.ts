@@ -35,12 +35,14 @@ export const recurringIntervalEnum = pgEnum('recurring_interval', [
 ])
 
 export const userRoleEnum = pgEnum('user_role', [
+  'system_admin',
   'owner',
   'admin',
   'member'
 ])
 
 export const inviteRoleEnum = pgEnum('invite_role', [
+  'admin',
   'owner',
   'member'
 ])
@@ -66,7 +68,6 @@ export const organizations = pgTable('organizations', {
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   organizationId: integer('organization_id')
-                  .notNull()
                   .references(() => organizations.id, { onDelete: 'cascade'}),
   name: varchar("name", { length: 100}).notNull(),
   lastName: varchar('last_name', { length: 100}).notNull(),
