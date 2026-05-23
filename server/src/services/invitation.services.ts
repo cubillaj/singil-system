@@ -39,6 +39,7 @@ export const getInvitation = async (organizationId: unknown, query: unknown) => 
         columns: {
             id: true,
             code: true,
+            role: true,
             expiresAt: true,
             createdAt: true,
             usedAt: true

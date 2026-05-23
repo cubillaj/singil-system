@@ -24,9 +24,9 @@ export const organizationFilters = async (role: UserRole, organizationId: number
 
     if(search) {
         const searchFilter = or(
-            ilike(users.name, `${search}`),
-            ilike(users.lastName, `${search}`),
-            ilike(users.email, `${search}`)
+            ilike(users.name, `%${search}%`),
+            ilike(users.lastName, `%${search}%`),
+            ilike(users.email, `%${search}%`)
         )
 
         if (searchFilter) {

@@ -6,7 +6,6 @@ import { DeleteOrganizationSchema, OrganizationUpdateUserSchema, SingleUserOrgan
 import { organizations, users } from "../db/schema.js";
 import { createSlug } from "../utils/slug.js";
 import { organizationFilters } from "../utils/organization.utils.js";
-import { email } from "zod";
 
 type UserRole = 'admin' | 'owner'
 export const getOrganizationMembersAndAdmin = async (organizationId: number, userRole: UserRole, query: unknown) => {

@@ -6,9 +6,11 @@ import { AppError } from '../utils/appError.js'
 export const getInvitationController = async (req: Request, res: Response) => {
     try {
        const session = req.authSession!
-       const { organizationId } = session
+       const organizationId = session.role === 'system_admin'
+        ? Number(req.query.organizationId)
+        : session.organizationId
 
-       if (organizationId === null) {
+       if (typeof organizationId !== 'number' || !Number.isInteger(organizationId) || organizationId <= 0) {
         return res.status(400).json({ message: 'Organization id is required.'})
        }
 
@@ -45,14 +47,17 @@ export const deleteOrganizationInvitesController = async (req: Request, res: Res
     try {
         const invitationId = Number(req.params.id)
         const session = req.authSession!
+        const organizationId = session.role === 'system_admin'
+            ? Number(req.query.organizationId)
+            : session.organizationId
 
-        if (session.organizationId === null) {
+        if (typeof organizationId !== 'number' || !Number.isInteger(organizationId) || organizationId <= 0) {
             throw new AppError('Organization id is required.', 400)
         }
 
         await InvitationService.deleteInvitation({
             id: invitationId,
-            organizationId: session.organizationId
+            organizationId
         })
 
         return res.status(200).json({
