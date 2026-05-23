@@ -49,7 +49,9 @@ export const getOrganizationMembersAndAdmin = async (organizationId: number, use
             total,
             totalPages,
             page,
-            limit
+            limit,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1
         }
     }
 

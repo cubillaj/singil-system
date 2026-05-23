@@ -109,14 +109,22 @@ export const clients = pgTable("clients", {
     .references(() => organizations.id, { onDelete: "cascade" }),
   name: varchar("name", { length: 255 }).notNull(),
   email: varchar("email", { length: 255 }),
-  phone: varchar("phone", { length: 50 }),
+  
   company: varchar("company", { length: 255 }),
   taxId: varchar("tax_id", { length: 100 }),
   // Billing address
   addressLine1: text("address_line1"),
   addressLine2: text("address_line2"),
+
+  barangay: varchar("barangay", { length: 100 }),
+  province: varchar("province", { length: 100 }),
+  region: varchar("region", { length: 100 }),
   city: varchar("city", { length: 100 }),
   state: varchar("state", { length: 100 }),
+
+  contactPerson: varchar("contact_person", { length: 255 }),
+  contactPhone: varchar("contact_phone", { length: 50 }),
+
   postalCode: varchar("postal_code", { length: 20 }),
   country: varchar("country", { length: 100 }),
   // Preferences
