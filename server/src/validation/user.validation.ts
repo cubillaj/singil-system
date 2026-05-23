@@ -20,9 +20,12 @@ export const UserSchema = z.object({
     organizationId: z.number().positive().nullable(),
     email: z.email( {error: 'Invalid format' })    
         .transform(value => value.toLocaleLowerCase() ),
+    status: z.enum(['active', 'inActive']).default('active'),
     role: UserRoleSchema.default('member').nullable(),
     avatarUrl: z.url().optional(),
     emailVerified: z.boolean().default(false)
 })
+
+
 
 export type User = z.infer<typeof UserSchema>

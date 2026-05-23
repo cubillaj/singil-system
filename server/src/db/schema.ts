@@ -34,6 +34,11 @@ export const recurringIntervalEnum = pgEnum('recurring_interval', [
   'yearly'
 ])
 
+export const statusEnum = pgEnum('status', [
+  'active',
+  'inActive'
+])
+
 export const userRoleEnum = pgEnum('user_role', [
   'system_admin',
   'owner',
@@ -77,6 +82,7 @@ export const users = pgTable("users", {
   avatarUrl: text('avatar_url'),
   emailVerified: boolean('email_verified').default(false).notNull(),
   emailVerifiedAt: timestamp('email_verified_at'),
+  status: statusEnum('status').default('active'),
   ...timestamps
 });
 

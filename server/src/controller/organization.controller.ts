@@ -8,6 +8,107 @@ import { organizations } from "../db/schema.js"
 import { eq } from "drizzle-orm"
 import { AppError } from "../utils/appError.js"
 
+export const getSingleOrganizationUserController = async (req: Request, res: Response) => {
+    try {
+        const userId: number = Number(req.params.id)
+
+        if(!userId) return res.status(400).json({message: 'User id is required'})
+
+        const session = req.authSession!
+
+        const { organizationId } = session
+
+        if(!organizationId) return res.status(400).json({message: 'User id is required'})
+        const user = await OrganizationServices.getOrganizationSingleUsers({ 
+            organizationId,
+            userId
+        })
+
+        return res.status(200).json({
+            user
+        })
+    } catch (error) {
+        return handleControllererror(res, error)
+    }
+}
+
+
+export const getOrganizationMembersAndAdminController = async (req: Request, res: Response) => {
+    try {
+        const session = req.authSession!
+
+        if (session.organizationId === null) {
+            throw new AppError('Organization is required', 400)
+        }
+
+        if (session.role === 'system_admin' || session.role === 'member') {
+            throw new AppError('Forbidden', 403)
+        }
+
+        const result = await OrganizationServices.getOrganizationMembersAndAdmin(
+            session.organizationId,
+            session.role,
+            req.query
+        )
+
+        return res.status(200).json({
+            ...result
+        })
+    } catch (error) {
+        return handleControllererror(res, error)
+    }
+}
+
+export const updateUserOrganizationController = async (req: Request, res: Response) => {
+    try {
+        const targetUser = Number(req.params.id)
+        const session = req.authSession!
+
+        const updatedUser = await OrganizationServices.updateOrganizationUsers({
+            targetUser,
+            userId: session.userId,
+            organizationId: session.organizationId,
+            ...req.body
+        })
+
+        return res.status(200).json({
+            message: 'Successfully updated user.',
+            updatedUser
+        })
+    } catch (error) {
+        return handleControllererror(res, error)
+    }
+}
+
+export const deleteUserOrganizationController = async (req: Request, res: Response) => {
+    try {
+        const targetUser = Number(req.params.id)
+        const session = req.authSession!
+
+        if (!Number.isInteger(targetUser) || targetUser <= 0) {
+            throw new AppError('Valid user id is required', 400)
+        }
+
+        if (session.organizationId === null) {
+            throw new AppError('Organization is required', 400)
+        }
+
+        const deletedUser = await OrganizationServices.deleteOrganizationUsers({
+            targetUser,
+            userId: session.userId,
+            userRole: session.role,
+            organizationId: session.organizationId
+        })
+
+        return res.status(200).json({
+            message: 'Successfully deleted user.',
+            deletedUser
+        })
+    } catch (error) {
+        return handleControllererror(res, error)
+    }
+}
+
 // @desc    Update the authenticated user's organization profile and optional logo
 // @route   PUT /api/organization/org-profile
 // @access  Private/Admin/Owner
