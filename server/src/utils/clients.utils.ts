@@ -41,6 +41,10 @@ export const clientsFilter = async (organizationId: number, query: unknown) => {
         filters.push(lte(clients.createdAt, createdTo))
     }
 
+    if (currency) {
+        filters.push(eq(clients.currency, currency))
+    }
+
     const sortColumn = {
         createdAt: clients.createdAt
     }[sortBy]

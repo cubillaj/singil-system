@@ -1,4 +1,4 @@
-export function Button({ variant = 'primary', className = '', ...props }) {
+export function Button({ as: Component = 'button', variant = 'primary', className = '', ...props }) {
   const variants = {
     primary: 'bg-accent text-white hover:bg-accent-strong',
     secondary: 'border border-line bg-panel text-ink hover:bg-surface',
@@ -7,7 +7,7 @@ export function Button({ variant = 'primary', className = '', ...props }) {
   }
 
   return (
-    <button
+    <Component
       className={`inline-flex h-10 items-center justify-center gap-2 rounded-md px-3 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${variants[variant]} ${className}`}
       {...props}
     />

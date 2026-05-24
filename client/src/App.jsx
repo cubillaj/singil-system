@@ -1,25 +1,109 @@
-import { useEffect, useState } from 'react'
+import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { DashboardLayout } from './layouts/DashboardLayout'
 import { useAuth } from './hooks/useAuth'
 import { AuthPage } from './pages/AuthPage'
-import { InvitationsPage } from './pages/InvitationsPage'
-import { MembersPage } from './pages/MembersPage'
+import { ClientFormPage, ClientsPage } from './pages/ClientsPage'
+import { InvitationCreatePage, InvitationsPage } from './pages/InvitationsPage'
+import { MemberEditPage, MembersPage } from './pages/MembersPage'
 import { OrganizationPage } from './pages/OrganizationPage'
+import { ProductFormPage, ProductsPage } from './pages/ProductsPage'
+
+function defaultPageForRole(role) {
+  if (role === 'system_admin') return '/dashboard/invitations'
+  if (role === 'member') return '/dashboard/clients'
+  return '/dashboard/members'
+}
+
+function canAccessPage(role, page) {
+  const access = {
+    members: ['admin', 'owner'],
+    'member-edit': ['admin', 'owner'],
+    clients: ['admin', 'member', 'owner'],
+    'client-new': ['admin', 'member', 'owner'],
+    'client-edit': ['admin', 'member', 'owner'],
+    products: ['admin', 'member', 'owner'],
+    'product-new': ['admin', 'owner'],
+    'product-edit': ['admin', 'owner'],
+    invitations: ['system_admin', 'admin', 'owner'],
+    'invitation-new': ['system_admin', 'admin', 'owner'],
+    organization: ['admin', 'owner'],
+  }
+
+  return access[page]?.includes(role) ?? false
+}
+
+function pageToPath(page, params = {}) {
+  const paths = {
+    members: '/dashboard/members',
+    'member-edit': `/dashboard/members/${params.memberId}/edit`,
+    clients: '/dashboard/clients',
+    'client-new': '/dashboard/clients/new',
+    'client-edit': `/dashboard/clients/${params.clientId}/edit`,
+    products: '/dashboard/products',
+    'product-new': '/dashboard/products/new',
+    'product-edit': `/dashboard/products/${params.productId}/edit`,
+    invitations: '/dashboard/invitations',
+    'invitation-new': '/dashboard/invitations/new',
+    organization: '/dashboard/organization',
+  }
+
+  return paths[page] ?? '/dashboard'
+}
+
+function activePageFromPath(pathname) {
+  if (pathname.startsWith('/dashboard/members/') && pathname.endsWith('/edit')) return 'member-edit'
+  if (pathname === '/dashboard/members') return 'members'
+  if (pathname === '/dashboard/clients/new') return 'client-new'
+  if (pathname.startsWith('/dashboard/clients/') && pathname.endsWith('/edit')) return 'client-edit'
+  if (pathname === '/dashboard/clients') return 'clients'
+  if (pathname === '/dashboard/products/new') return 'product-new'
+  if (pathname.startsWith('/dashboard/products/') && pathname.endsWith('/edit')) return 'product-edit'
+  if (pathname === '/dashboard/products') return 'products'
+  if (pathname === '/dashboard/invitations/new') return 'invitation-new'
+  if (pathname === '/dashboard/invitations') return 'invitations'
+  if (pathname === '/dashboard/organization') return 'organization'
+  return 'dashboard'
+}
+
+function routeRootPage(page) {
+  if (page.startsWith('client-')) return 'clients'
+  if (page.startsWith('product-')) return 'products'
+  if (page.startsWith('member-')) return 'members'
+  if (page.startsWith('invitation-')) return 'invitations'
+  return page
+}
+
+function ProtectedPage({ user, page, children }) {
+  if (!canAccessPage(user?.role, page)) {
+    return <Navigate to={defaultPageForRole(user?.role)} replace />
+  }
+
+  return children
+}
+
+function ClientEditRoute({ onNavigate }) {
+  const { clientId } = useParams()
+  return <ClientFormPage clientId={clientId} onNavigate={onNavigate} />
+}
+
+function ProductEditRoute({ onNavigate }) {
+  const { productId } = useParams()
+  return <ProductFormPage productId={productId} onNavigate={onNavigate} />
+}
+
+function MemberEditRoute({ user, onNavigate }) {
+  const { memberId } = useParams()
+  return <MemberEditPage user={user} memberId={memberId} onNavigate={onNavigate} />
+}
 
 function App() {
   const auth = useAuth()
-  const [activePage, setActivePageState] = useState(() => localStorage.getItem('singil:page') ?? 'members')
+  const navigate = useNavigate()
+  const location = useLocation()
 
-  const setActivePage = (page) => {
-    localStorage.setItem('singil:page', page)
-    setActivePageState(page)
+  const navigateToPage = (page, params = {}) => {
+    navigate(pageToPath(page, params))
   }
-
-  useEffect(() => {
-    if (auth.user?.role === 'system_admin' && activePage !== 'invitations') {
-      setActivePage('invitations')
-    }
-  }, [activePage, auth.user?.role])
 
   if (auth.loading) {
     return (
@@ -33,11 +117,26 @@ function App() {
     return <AuthPage onLogin={auth.login} onRegister={auth.register} />
   }
 
+  const activePage = activePageFromPath(location.pathname)
+  const activeRootPage = routeRootPage(activePage)
+
   return (
-    <DashboardLayout user={auth.user} activePage={activePage} onNavigate={setActivePage} onLogout={auth.logout}>
-      {activePage === 'members' ? <MembersPage /> : null}
-      {activePage === 'invitations' ? <InvitationsPage user={auth.user} /> : null}
-      {activePage === 'organization' ? <OrganizationPage user={auth.user} onUpdated={auth.refresh} /> : null}
+    <DashboardLayout user={auth.user} activePage={activeRootPage} onNavigate={navigateToPage} onLogout={auth.logout}>
+      <Routes>
+        <Route path="/dashboard" element={<Navigate to={defaultPageForRole(auth.user?.role)} replace />} />
+        <Route path="/dashboard/members" element={<ProtectedPage user={auth.user} page="members"><MembersPage user={auth.user} onNavigate={navigateToPage} /></ProtectedPage>} />
+        <Route path="/dashboard/members/:memberId/edit" element={<ProtectedPage user={auth.user} page="member-edit"><MemberEditRoute user={auth.user} onNavigate={navigateToPage} /></ProtectedPage>} />
+        <Route path="/dashboard/clients" element={<ProtectedPage user={auth.user} page="clients"><ClientsPage onNavigate={navigateToPage} /></ProtectedPage>} />
+        <Route path="/dashboard/clients/new" element={<ProtectedPage user={auth.user} page="client-new"><ClientFormPage onNavigate={navigateToPage} /></ProtectedPage>} />
+        <Route path="/dashboard/clients/:clientId/edit" element={<ProtectedPage user={auth.user} page="client-edit"><ClientEditRoute onNavigate={navigateToPage} /></ProtectedPage>} />
+        <Route path="/dashboard/products" element={<ProtectedPage user={auth.user} page="products"><ProductsPage user={auth.user} onNavigate={navigateToPage} /></ProtectedPage>} />
+        <Route path="/dashboard/products/new" element={<ProtectedPage user={auth.user} page="product-new"><ProductFormPage onNavigate={navigateToPage} /></ProtectedPage>} />
+        <Route path="/dashboard/products/:productId/edit" element={<ProtectedPage user={auth.user} page="product-edit"><ProductEditRoute onNavigate={navigateToPage} /></ProtectedPage>} />
+        <Route path="/dashboard/invitations" element={<ProtectedPage user={auth.user} page="invitations"><InvitationsPage user={auth.user} onNavigate={navigateToPage} /></ProtectedPage>} />
+        <Route path="/dashboard/invitations/new" element={<ProtectedPage user={auth.user} page="invitation-new"><InvitationCreatePage user={auth.user} onNavigate={navigateToPage} /></ProtectedPage>} />
+        <Route path="/dashboard/organization" element={<ProtectedPage user={auth.user} page="organization"><OrganizationPage user={auth.user} onUpdated={auth.refresh} /></ProtectedPage>} />
+        <Route path="*" element={<Navigate to={defaultPageForRole(auth.user?.role)} replace />} />
+      </Routes>
     </DashboardLayout>
   )
 }

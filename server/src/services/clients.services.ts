@@ -64,7 +64,6 @@ export const getAllClients = async (organizationId: number, query: unknown) => {
             updatedAt: false,
             isArchived: false,
             organizationId: false,
-            id: false
         },
         orderBy,
         limit,

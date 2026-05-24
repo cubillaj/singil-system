@@ -79,6 +79,10 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
         if (invitation.usedAt) {
           throw new AppError('Invitation already used', 400)
         }
+
+        if (parsed.data.role !== invitation.role) {
+          throw new AppError(`Invitation code is for ${invitation.role}`, 400);
+        }
         
         if(invitation.expiresAt <= new Date()) {
           throw new AppError("Invitation Expired.", 400);

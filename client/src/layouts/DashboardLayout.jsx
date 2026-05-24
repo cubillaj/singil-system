@@ -1,17 +1,26 @@
-import { Building2, LogOut, MailPlus, Settings, Users } from 'lucide-react'
+import { BriefcaseBusiness, Building2, LogOut, MailPlus, Package, Settings, Users } from 'lucide-react'
 import { Button } from '../components/Button'
 import { getInitials, roleLabel } from '../utils/format'
 
 const navItems = [
-  { id: 'members', label: 'Members', icon: Users },
-  { id: 'invitations', label: 'Invitations', icon: MailPlus },
-  { id: 'organization', label: 'Organization', icon: Settings },
+  { id: 'members', label: 'Members', icon: Users, roles: ['admin', 'owner'] },
+  { id: 'clients', label: 'Clients', icon: BriefcaseBusiness, roles: ['admin', 'member', 'owner'] },
+  { id: 'products', label: 'Products', icon: Package, roles: ['admin', 'member', 'owner'] },
+  { id: 'invitations', label: 'Invitations', icon: MailPlus, roles: ['system_admin', 'admin', 'owner'] },
+  { id: 'organization', label: 'Organization', icon: Settings, roles: ['admin', 'owner'] },
 ]
 
+function rootPage(page) {
+  if (page.startsWith('client-')) return 'clients'
+  if (page.startsWith('product-')) return 'products'
+  if (page.startsWith('member-')) return 'members'
+  if (page.startsWith('invitation-')) return 'invitations'
+  return page
+}
+
 export function DashboardLayout({ user, activePage, onNavigate, onLogout, children }) {
-  const visibleNavItems = user?.role === 'system_admin'
-    ? navItems.filter((item) => item.id === 'invitations')
-    : navItems
+  const visibleNavItems = navItems.filter((item) => item.roles.includes(user?.role))
+  const selectedPage = rootPage(activePage)
 
   return (
     <div className="min-h-screen bg-surface text-ink">
@@ -26,7 +35,7 @@ export function DashboardLayout({ user, activePage, onNavigate, onLogout, childr
         <nav className="grid gap-1 p-3">
           {visibleNavItems.map((item) => {
             const Icon = item.icon
-            const active = activePage === item.id
+            const active = selectedPage === item.id
 
             return (
               <button
@@ -50,7 +59,7 @@ export function DashboardLayout({ user, activePage, onNavigate, onLogout, childr
           <div className="flex items-center gap-3 lg:hidden">
             <div className="grid size-9 place-items-center rounded-md bg-accent text-sm font-bold text-white">S</div>
             <select
-              value={activePage}
+              value={selectedPage}
               onChange={(event) => onNavigate(event.target.value)}
               className="h-10 rounded-md border border-line bg-white px-3 text-sm font-medium outline-none"
             >

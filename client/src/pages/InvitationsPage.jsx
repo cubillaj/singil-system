@@ -1,8 +1,10 @@
-import { Copy, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, Copy, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Button } from '../components/Button'
 import { EmptyState } from '../components/EmptyState'
 import { Field, inputClassName } from '../components/Form'
+import { Modal } from '../components/Modal'
+import { Notice } from '../components/Notice'
 import { PageHeader } from '../components/PageHeader'
 import { StatusPill } from '../components/StatusPill'
 import { invitationApi } from '../services/api'
@@ -14,11 +16,10 @@ function defaultExpiry() {
   return date.toISOString().slice(0, 16)
 }
 
-export function InvitationsPage({ user }) {
+export function InvitationsPage({ user, onNavigate }) {
   const [invitations, setInvitations] = useState([])
   const [pagination, setPagination] = useState({ page: 1, limit: 10, totalPages: 1, total: 0 })
   const [page, setPage] = useState(1)
-  const [form, setForm] = useState({ role: 'member', expiresAt: defaultExpiry(), organizationId: '' })
   const [filters, setFilters] = useState({
     organizationId: '',
     sortBy: 'createdAt',
@@ -27,6 +28,8 @@ export function InvitationsPage({ user }) {
     createdTo: '',
   })
   const [error, setError] = useState('')
+  const [modal, setModal] = useState({ open: false })
+  const [inviteToDelete, setInviteToDelete] = useState(null)
   const [loading, setLoading] = useState(false)
 
   const loadInvitations = async () => {
@@ -68,62 +71,61 @@ export function InvitationsPage({ user }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page])
 
-  const createInvitation = async (event) => {
-    event.preventDefault()
+  const confirmDeleteInvitation = async () => {
+    if (!inviteToDelete) return
+    const params = user?.role === 'system_admin' ? { organizationId: filters.organizationId } : {}
     setError('')
     try {
-      const payload = {
-        role: form.role,
-        expiresAt: new Date(form.expiresAt).toISOString(),
-      }
-      const targetOrganizationId = form.organizationId || filters.organizationId
-      if (user?.role === 'system_admin' && targetOrganizationId) {
-        payload.organizationId = Number(targetOrganizationId)
-      }
-      await invitationApi.create(payload)
-      setForm({ role: 'member', expiresAt: defaultExpiry(), organizationId: '' })
+      await invitationApi.delete(inviteToDelete.id, params)
+      setModal({
+        open: true,
+        tone: 'success',
+        title: 'Invitation deleted',
+        message: 'The invitation code was removed successfully.',
+        confirmText: 'Done',
+        onConfirm: () => setModal({ open: false }),
+      })
+      setInviteToDelete(null)
       await loadInvitations()
     } catch (err) {
       setError(err.message)
+      setInviteToDelete(null)
     }
-  }
-
-  const deleteInvitation = async (invitation) => {
-    if (!window.confirm('Delete this invitation?')) return
-    const params = user?.role === 'system_admin' ? { organizationId: filters.organizationId } : {}
-    await invitationApi.delete(invitation.id, params)
-    await loadInvitations()
   }
 
   return (
     <section>
-      <PageHeader title="Invitations" description="Create and manage organization invitation codes." />
-
-      <div className="grid gap-5 border-b border-line bg-panel p-5 xl:grid-cols-[360px_1fr]">
-        <form onSubmit={createInvitation} className="grid content-start gap-4">
-          {user?.role === 'system_admin' ? (
-            <Field label="Target organization ID">
-              <input className={inputClassName()} value={form.organizationId} onChange={(event) => setForm({ ...form, organizationId: event.target.value })} placeholder={filters.organizationId || 'Required'} />
-            </Field>
-          ) : null}
-          <Field label="Invite role">
-            <select className={inputClassName()} value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })}>
-              <option value="member">Member</option>
-              <option value="admin">Admin</option>
-              <option value="owner">Owner</option>
-            </select>
-          </Field>
-          <Field label="Expires at">
-            <input className={inputClassName()} type="datetime-local" value={form.expiresAt} onChange={(event) => setForm({ ...form, expiresAt: event.target.value })} />
-          </Field>
-          <Button type="submit">
-            <Plus size={17} />
-            Create invitation
+      <Modal
+        open={modal.open}
+        tone={modal.tone}
+        title={modal.title}
+        message={modal.message}
+        confirmText={modal.confirmText}
+        onConfirm={modal.onConfirm}
+        onClose={modal.onClose}
+      />
+      <Modal
+        open={Boolean(inviteToDelete)}
+        tone="danger"
+        title="Delete invitation?"
+        message="This invitation code will no longer be usable."
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDeleteInvitation}
+        onCancel={() => setInviteToDelete(null)}
+      />
+      <PageHeader
+        title="Invitations"
+        description="Create and manage organization invitation codes."
+        action={(
+          <Button onClick={() => onNavigate('invitation-new', { organizationId: filters.organizationId })}>
+            <Plus size={16} />
+            New invitation
           </Button>
-          {error ? <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-danger">{error}</p> : null}
-        </form>
+        )}
+      />
 
-        <div className="grid gap-3">
+      <div className="grid gap-3 border-b border-line bg-panel p-5">
           <div className="grid gap-3 md:grid-cols-[1fr_150px_150px_180px_180px_90px]">
             {user?.role === 'system_admin' ? (
               <input
@@ -152,7 +154,9 @@ export function InvitationsPage({ user }) {
             </div>
           ) : null}
 
-        <div className="overflow-x-auto border border-line bg-white">
+        <Notice>{error}</Notice>
+
+        <div className="overflow-x-auto bg-white">
           <table className="w-full min-w-[680px] text-left text-sm">
             <thead className="border-b border-line bg-surface text-xs uppercase text-muted">
               <tr>
@@ -182,7 +186,7 @@ export function InvitationsPage({ user }) {
                       <Button variant="ghost" title="Copy code" aria-label="Copy code" className="mr-1 w-10 px-0" onClick={() => navigator.clipboard?.writeText(invitation.code)}>
                         <Copy size={17} />
                       </Button>
-                      <Button variant="ghost" title="Delete invitation" aria-label="Delete invitation" className="w-10 px-0 text-danger" onClick={() => deleteInvitation(invitation)}>
+                      <Button variant="ghost" title="Delete invitation" aria-label="Delete invitation" className="w-10 px-0 text-danger" onClick={() => setInviteToDelete(invitation)}>
                         <Trash2 size={17} />
                       </Button>
                     </td>
@@ -193,7 +197,6 @@ export function InvitationsPage({ user }) {
           </table>
           {!loading && invitations.length === 0 ? <EmptyState title="No invitations yet" description="Create a code to invite someone." /> : null}
         </div>
-        </div>
       </div>
 
       <div className="flex items-center justify-between border-t border-line bg-panel px-5 py-4 text-sm">
@@ -203,6 +206,86 @@ export function InvitationsPage({ user }) {
           <Button variant="secondary" disabled={page >= pagination.totalPages} onClick={() => setPage(page + 1)}>Next</Button>
         </div>
       </div>
+    </section>
+  )
+}
+
+export function InvitationCreatePage({ user, onNavigate }) {
+  const [form, setForm] = useState({ role: 'member', expiresAt: defaultExpiry(), organizationId: '' })
+  const [error, setError] = useState('')
+  const [successModal, setSuccessModal] = useState({ open: false })
+  const [saving, setSaving] = useState(false)
+
+  const createInvitation = async (event) => {
+    event.preventDefault()
+    setSaving(true)
+    setError('')
+    try {
+      const payload = {
+        role: form.role,
+        expiresAt: new Date(form.expiresAt).toISOString(),
+      }
+
+      if (user?.role === 'system_admin') {
+        payload.organizationId = Number(form.organizationId)
+      }
+
+      await invitationApi.create(payload)
+      setSuccessModal({
+        open: true,
+        title: 'Invitation created',
+        message: 'The new invitation code is ready to share.',
+      })
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <section>
+      <Modal
+        open={successModal.open}
+        title={successModal.title}
+        message={successModal.message}
+        confirmText="Back to invitations"
+        onConfirm={() => onNavigate('invitations')}
+        onClose={() => onNavigate('invitations')}
+      />
+      <PageHeader
+        title="Create Invitation"
+        description="Generate a code for a new organization user."
+        action={(
+          <Button variant="secondary" onClick={() => onNavigate('invitations')}>
+            <ArrowLeft size={16} />
+            Back
+          </Button>
+        )}
+      />
+
+      <form onSubmit={createInvitation} className="grid max-w-2xl gap-5 p-5">
+        <Notice>{error}</Notice>
+        {user?.role === 'system_admin' ? (
+          <Field label="Target organization ID">
+            <input className={inputClassName()} value={form.organizationId} onChange={(event) => setForm({ ...form, organizationId: event.target.value })} required />
+          </Field>
+        ) : null}
+        <Field label="Invite role">
+          <select className={inputClassName()} value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })}>
+            <option value="member">Member</option>
+            <option value="admin">Admin</option>
+            <option value="owner">Owner</option>
+          </select>
+        </Field>
+        <Field label="Expires at">
+          <input className={inputClassName()} type="datetime-local" value={form.expiresAt} onChange={(event) => setForm({ ...form, expiresAt: event.target.value })} required />
+        </Field>
+        <Button type="submit" disabled={saving} className="w-fit">
+          <Plus size={17} />
+          {saving ? 'Creating...' : 'Create invitation'}
+        </Button>
+      </form>
     </section>
   )
 }

@@ -2,9 +2,7 @@ import z from "zod";
 import { UserRoleSchema } from "./user.validation.js";
 
 export const RegisterSchema = z.object({
-  code: z.string( { error: 'Code is required'})
-        .min(1)
-        .optional(),
+  code: z.uuid({ error: "Invalid code" }).optional(),
   name: z.string({ error: "Name is required" })
     .min(1, "Name is required.")
     .max(50, "Max letter is only 50"),

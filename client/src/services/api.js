@@ -5,7 +5,10 @@ async function parseResponse(response) {
   const data = contentType.includes('application/json') ? await response.json() : null
 
   if (!response.ok) {
-    throw new Error(data?.message ?? 'Request failed')
+    const error = new Error(data?.message ?? data?.error ?? 'Request failed')
+    error.status = response.status
+    error.data = data
+    throw error
   }
 
   return data
@@ -65,4 +68,32 @@ export const invitationApi = {
     const query = new URLSearchParams(params).toString()
     return apiRequest(`/api/invitation/${id}${query ? `?${query}` : ''}`, { method: 'DELETE' })
   },
+}
+
+export const clientApi = {
+  list: (params = {}) => apiRequest(`/api/clients?${new URLSearchParams(params)}`),
+  get: (id) => apiRequest(`/api/clients/${id}`),
+  create: (payload) => apiRequest('/api/clients', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }),
+  update: (id, payload) => apiRequest(`/api/clients/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  }),
+  delete: (id) => apiRequest(`/api/clients/${id}`, { method: 'DELETE' }),
+}
+
+export const productApi = {
+  list: (params = {}) => apiRequest(`/api/products?${new URLSearchParams(params)}`),
+  get: (id) => apiRequest(`/api/products/${id}`),
+  create: (payload) => apiRequest('/api/products', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }),
+  update: (id, payload) => apiRequest(`/api/products/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  }),
+  delete: (id) => apiRequest(`/api/products/${id}`, { method: 'DELETE' }),
 }

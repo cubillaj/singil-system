@@ -67,10 +67,12 @@ export const getOrganizationSingleUsers = async (ids: unknown) => {
     const {organizationId, userId} = parsed.data
 
     const [user] = await db.select({
+                            id: users.id,
                             name: users.name,
                             lastName: users.lastName,
                             email: users.email,
-                            role: users.role
+                            role: users.role,
+                            status: users.status
                         })
                          .from(users)
                          .where(and(

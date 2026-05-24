@@ -1,7 +1,10 @@
+import { CheckCircle2, CreditCard, FileText, ShieldCheck, Users } from 'lucide-react'
 import { useState } from 'react'
+import { Link, Navigate, NavLink, Route, Routes, useNavigate } from 'react-router-dom'
 import heroImg from '../assets/hero.png'
 import { Button } from '../components/Button'
 import { Field, inputClassName } from '../components/Form'
+import { Notice } from '../components/Notice'
 
 const initialLogin = { email: '', password: '' }
 const initialRegister = {
@@ -14,8 +17,221 @@ const initialRegister = {
   code: '',
 }
 
-export function AuthPage({ onLogin, onRegister }) {
-  const [mode, setMode] = useState('login')
+const features = [
+  { title: 'Clients', text: 'Keep customer profiles, contact details, currencies, and notes ready for billing.', icon: Users },
+  { title: 'Products', text: 'Save services, rates, units, and tax values so invoice work starts from clean data.', icon: FileText },
+  { title: 'Teams', text: 'Invite owners, admins, and members with access that matches their work.', icon: ShieldCheck },
+]
+
+const plans = [
+  { name: 'Free', price: 'PHP 0', text: 'For solo testing and early setup.', items: ['Basic clients', 'Products list', 'Team invitations'] },
+  { name: 'Pro', price: 'PHP 499', text: 'For active freelancers and small teams.', items: ['More invoice workflows', 'Payment tracking', 'Priority workspace tools'] },
+  { name: 'Business', price: 'PHP 1,499', text: 'For teams that need stronger controls.', items: ['Advanced team access', 'Recurring billing', 'Business reporting'] },
+]
+
+function PublicNav() {
+  const linkClass = ({ isActive }) => (isActive ? 'text-ink' : 'hover:text-ink')
+
+  return (
+    <header className="sticky top-0 z-20 border-b border-line bg-panel/95 backdrop-blur">
+      <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
+        <Link to="/" className="flex items-center gap-3">
+          <div className="grid size-10 place-items-center rounded-md bg-accent text-sm font-bold text-white">S</div>
+          <div>
+            <p className="text-sm font-semibold">Singil</p>
+            <p className="text-xs text-muted">Invoice operations</p>
+          </div>
+        </Link>
+
+        <div className="hidden items-center gap-6 text-sm font-medium text-muted md:flex">
+          <NavLink to="/" end className={linkClass}>Home</NavLink>
+          <NavLink to="/about" className={linkClass}>About</NavLink>
+          <NavLink to="/subscription" className={linkClass}>Subscription</NavLink>
+          <NavLink to="/login" className={linkClass}>Login</NavLink>
+        </div>
+
+        <Button as={Link} to="/register">Get started</Button>
+      </nav>
+    </header>
+  )
+}
+
+function Footer() {
+  return (
+    <footer className="border-t border-line bg-panel px-4 py-8 sm:px-6">
+      <div className="mx-auto flex max-w-7xl flex-col gap-4 text-sm text-muted md:flex-row md:items-center md:justify-between">
+        <div>
+          <p className="font-semibold text-ink">Singil</p>
+          <p>Billing workspace for teams that want cleaner invoice operations.</p>
+        </div>
+        <div className="flex gap-4">
+          <Link to="/about" className="hover:text-ink">About</Link>
+          <Link to="/subscription" className="hover:text-ink">Subscription</Link>
+          <Link to="/login" className="hover:text-ink">Login</Link>
+        </div>
+      </div>
+    </footer>
+  )
+}
+
+function AboutSection() {
+  return (
+    <section className="border-b border-line bg-panel px-4 py-16 sm:px-6">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-8 max-w-2xl">
+          <h2 className="text-2xl font-semibold sm:text-3xl">One place for the work before the invoice</h2>
+          <p className="mt-3 text-base leading-7 text-muted">
+            Singil helps your team keep client records, product pricing, and member access organized before invoices and payments become messy.
+          </p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          {features.map((feature) => {
+            const Icon = feature.icon
+            return (
+              <article key={feature.title} className="rounded-md border border-line bg-surface p-5">
+                <Icon className="mb-4 text-accent" size={24} />
+                <h3 className="font-semibold">{feature.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-muted">{feature.text}</p>
+              </article>
+            )
+          })}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function SubscriptionSection({ compact = false }) {
+  return (
+    <section className="border-b border-line bg-surface px-4 py-16 sm:px-6">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-8 max-w-2xl">
+          <h2 className="text-2xl font-semibold sm:text-3xl">Subscription plans</h2>
+          <p className="mt-3 text-base leading-7 text-muted">
+            Start with a simple workspace, then upgrade when your billing process needs more automation and team control.
+          </p>
+        </div>
+        <div className="grid gap-4 lg:grid-cols-3">
+          {plans.map((plan) => (
+            <article key={plan.name} className="rounded-md border border-line bg-panel p-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold">{plan.name}</h3>
+                  <p className="mt-1 text-sm text-muted">{plan.text}</p>
+                </div>
+                <p className="text-right text-sm font-semibold text-accent">{plan.price}</p>
+              </div>
+              <ul className="mt-5 grid gap-3 text-sm text-muted">
+                {plan.items.map((item) => (
+                  <li key={item} className="flex items-center gap-2">
+                    <CheckCircle2 className="shrink-0 text-accent" size={17} />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+              {!compact ? (
+                <Button as={Link} to="/register" className="mt-6 w-full" variant={plan.name === 'Free' ? 'secondary' : 'primary'}>
+                  Choose {plan.name}
+                </Button>
+              ) : null}
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function HomePage() {
+  return (
+    <>
+      <section className="relative isolate flex min-h-[calc(100vh-4rem)] items-center overflow-hidden border-b border-line bg-[#edf5f2] px-4 py-16 sm:px-6">
+        <img
+          src={heroImg}
+          alt=""
+          className="pointer-events-none absolute right-[-3rem] top-20 z-[-1] h-[24rem] w-[24rem] object-contain opacity-20 sm:right-8 sm:h-[32rem] sm:w-[32rem] lg:opacity-30"
+        />
+        <div className="mx-auto grid w-full max-w-7xl gap-10 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-center">
+          <div className="max-w-3xl">
+            <p className="mb-4 inline-flex rounded-md border border-line bg-panel px-3 py-1 text-sm font-medium text-accent">
+              Billing workspace for Philippine teams
+            </p>
+            <h1 className="max-w-4xl text-4xl font-semibold leading-tight tracking-normal text-ink sm:text-5xl lg:text-6xl">
+              Manage clients, products, invitations, and billing operations in one workspace.
+            </h1>
+            <p className="mt-5 max-w-2xl text-base leading-7 text-muted sm:text-lg">
+              Singil keeps the everyday setup work for invoicing organized, so teams can spend less time chasing records and more time collecting payments.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Button as={Link} to="/register">Create workspace</Button>
+              <Button as={Link} to="/login" variant="secondary">Sign in</Button>
+            </div>
+          </div>
+
+          <div className="grid gap-3 rounded-md border border-line bg-panel/90 p-4 shadow-sm">
+            <div className="flex items-center justify-between border-b border-line pb-3">
+              <div>
+                <p className="text-sm font-semibold">Workspace snapshot</p>
+                <p className="text-xs text-muted">Today</p>
+              </div>
+              <CreditCard className="text-accent" size={20} />
+            </div>
+            {[
+              ['Clients ready', '128'],
+              ['Products active', '42'],
+              ['Open invitations', '7'],
+            ].map(([label, value]) => (
+              <div key={label} className="flex items-center justify-between rounded-md bg-surface px-3 py-3">
+                <span className="text-sm text-muted">{label}</span>
+                <span className="text-lg font-semibold">{value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+      <AboutSection />
+      <SubscriptionSection compact />
+    </>
+  )
+}
+
+function AboutPage() {
+  return (
+    <section className="min-h-[calc(100vh-4rem)] bg-panel px-4 py-16 sm:px-6">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-8 max-w-2xl">
+          <h1 className="text-3xl font-semibold sm:text-4xl">Billing work stays easier when the basics stay organized</h1>
+          <p className="mt-4 text-base leading-7 text-muted">
+            Singil is designed for owners, admins, and members who need a shared place for client records, service pricing, organization roles, and invitation-based onboarding.
+          </p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          {features.map((feature) => {
+            const Icon = feature.icon
+            return (
+              <article key={feature.title} className="rounded-md border border-line bg-surface p-5">
+                <Icon className="mb-4 text-accent" size={24} />
+                <h2 className="font-semibold">{feature.title}</h2>
+                <p className="mt-2 text-sm leading-6 text-muted">{feature.text}</p>
+              </article>
+            )
+          })}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function SubscriptionPage() {
+  return (
+    <div className="min-h-[calc(100vh-4rem)]">
+      <SubscriptionSection />
+    </div>
+  )
+}
+
+function AuthFormPage({ mode, onLogin, onRegister }) {
+  const navigate = useNavigate()
   const [loginForm, setLoginForm] = useState(initialLogin)
   const [registerForm, setRegisterForm] = useState(initialRegister)
   const [error, setError] = useState('')
@@ -51,50 +267,36 @@ export function AuthPage({ onLogin, onRegister }) {
   }
 
   return (
-    <main className="grid min-h-screen bg-panel lg:grid-cols-[0.95fr_1.05fr]">
-      <section className="hidden border-r border-line bg-surface px-10 py-12 lg:flex lg:flex-col lg:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="grid size-10 place-items-center rounded-md bg-accent text-sm font-bold text-white">S</div>
-          <div>
-            <p className="text-base font-semibold text-ink">Singil</p>
-            <p className="text-sm text-muted">Invoice operations</p>
-          </div>
-        </div>
-        <div className="max-w-lg">
-          <img src={heroImg} alt="" className="mb-10 h-36 w-36 object-contain" />
-          <h1 className="text-4xl font-semibold tracking-normal text-ink">Manage billing teams with less drift.</h1>
-          <p className="mt-4 max-w-md text-base leading-7 text-muted">
-            Sign in to manage organization members, invitations, and workspace profile settings.
+    <section className="min-h-[calc(100vh-4rem)] bg-panel px-4 py-16 sm:px-6">
+      <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[minmax(0,1fr)_440px] lg:items-start">
+        <div className="max-w-2xl">
+          <h1 className="text-3xl font-semibold sm:text-4xl">{mode === 'login' ? 'Sign in to Singil' : 'Create your Singil workspace'}</h1>
+          <p className="mt-4 text-base leading-7 text-muted">
+            Owners can create a workspace. Invited admins and members can join with the exact invitation code and role assigned to them.
           </p>
         </div>
-        <p className="text-sm text-muted">Local API: {import.meta.env.VITE_API_URL ?? 'http://localhost:5000'}</p>
-      </section>
 
-      <section className="flex items-center justify-center px-4 py-10">
-        <div className="w-full max-w-md">
-          <div className="mb-7 lg:hidden">
-            <div className="mb-3 grid size-10 place-items-center rounded-md bg-accent text-sm font-bold text-white">S</div>
-            <h1 className="text-2xl font-semibold text-ink">Singil</h1>
-          </div>
-
+        <div className="rounded-md border border-line bg-panel p-5 shadow-sm">
           <div className="mb-6 inline-flex rounded-md border border-line bg-surface p-1">
             <button
               type="button"
-              onClick={() => setMode('login')}
+              onClick={() => navigate('/login')}
               className={`h-9 rounded px-4 text-sm font-medium ${mode === 'login' ? 'bg-panel text-ink shadow-sm' : 'text-muted'}`}
             >
               Login
             </button>
             <button
               type="button"
-              onClick={() => setMode('register')}
+              onClick={() => navigate('/register')}
               className={`h-9 rounded px-4 text-sm font-medium ${mode === 'register' ? 'bg-panel text-ink shadow-sm' : 'text-muted'}`}
             >
               Register
             </button>
           </div>
 
-          {error ? <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-danger">{error}</div> : null}
+          <div className="mb-4">
+            <Notice>{error}</Notice>
+          </div>
 
           {mode === 'login' ? (
             <form onSubmit={submitLogin} className="grid gap-4">
@@ -142,7 +344,24 @@ export function AuthPage({ onLogin, onRegister }) {
             </form>
           )}
         </div>
-      </section>
+      </div>
+    </section>
+  )
+}
+
+export function AuthPage({ onLogin, onRegister }) {
+  return (
+    <main className="min-h-screen bg-panel text-ink">
+      <PublicNav />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/subscription" element={<SubscriptionPage />} />
+        <Route path="/login" element={<AuthFormPage mode="login" onLogin={onLogin} onRegister={onRegister} />} />
+        <Route path="/register" element={<AuthFormPage mode="register" onLogin={onLogin} onRegister={onRegister} />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+      <Footer />
     </main>
   )
 }

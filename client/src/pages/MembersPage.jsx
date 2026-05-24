@@ -1,19 +1,27 @@
-import { RefreshCw, Save, Search, Trash2 } from 'lucide-react'
+import { ArrowLeft, Edit3, RefreshCw, Save, Search, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Button } from '../components/Button'
 import { EmptyState } from '../components/EmptyState'
-import { inputClassName } from '../components/Form'
+import { Field, inputClassName } from '../components/Form'
+import { Modal } from '../components/Modal'
+import { Notice } from '../components/Notice'
 import { PageHeader } from '../components/PageHeader'
 import { StatusPill } from '../components/StatusPill'
 import { organizationApi } from '../services/api'
 import { formatDate, roleLabel } from '../utils/format'
 
-export function MembersPage() {
+function canManageMember(currentUser, member) {
+  if (currentUser?.role === 'owner') return true
+  return currentUser?.role === 'admin' && member.role === 'member'
+}
+
+export function MembersPage({ user, onNavigate }) {
   const [members, setMembers] = useState([])
   const [pagination, setPagination] = useState({ page: 1, limit: 10, totalPages: 1, total: 0 })
   const [filters, setFilters] = useState({ search: '', status: '', page: 1, limit: 10 })
-  const [drafts, setDrafts] = useState({})
   const [error, setError] = useState('')
+  const [modal, setModal] = useState({ open: false })
+  const [memberToDelete, setMemberToDelete] = useState(null)
   const [loading, setLoading] = useState(false)
 
   const loadMembers = async () => {
@@ -22,12 +30,7 @@ export function MembersPage() {
     try {
       const params = Object.fromEntries(Object.entries(filters).filter(([, value]) => value !== ''))
       const data = await organizationApi.members(params)
-      const nextMembers = data.members ?? []
-      setMembers(nextMembers)
-      setDrafts(Object.fromEntries(nextMembers.map((member) => [
-        member.id,
-        { role: member.role, status: member.status ?? 'active' },
-      ])))
+      setMembers(data.members ?? [])
       setPagination(data.pagination ?? pagination)
     } catch (err) {
       setError(err.message)
@@ -41,37 +44,48 @@ export function MembersPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.page, filters.status])
 
-  const updateMember = async (member) => {
-    const draft = drafts[member.id]
-    if (!draft) return
-
-    const patch = {}
-    if (draft.role !== member.role) patch.role = draft.role
-    if (draft.status !== (member.status ?? 'active')) patch.status = draft.status
-    if (Object.keys(patch).length === 0) return
-
-    await organizationApi.updateMember(member.id, patch)
-    await loadMembers()
-  }
-
-  const updateDraft = (memberId, patch) => {
-    setDrafts((current) => ({
-      ...current,
-      [memberId]: {
-        ...current[memberId],
-        ...patch,
-      },
-    }))
-  }
-
-  const deleteMember = async (member) => {
-    if (!window.confirm(`Delete ${member.name} ${member.lastName}?`)) return
-    await organizationApi.deleteMember(member.id)
-    await loadMembers()
+  const confirmDeleteMember = async () => {
+    if (!memberToDelete || !canManageMember(user, memberToDelete)) return
+    setError('')
+    try {
+      await organizationApi.deleteMember(memberToDelete.id)
+      setModal({
+        open: true,
+        tone: 'success',
+        title: 'Member deleted',
+        message: `${memberToDelete.name} ${memberToDelete.lastName} was removed successfully.`,
+        confirmText: 'Done',
+        onConfirm: () => setModal({ open: false }),
+      })
+      setMemberToDelete(null)
+      await loadMembers()
+    } catch (err) {
+      setError(err.message)
+      setMemberToDelete(null)
+    }
   }
 
   return (
     <section>
+      <Modal
+        open={modal.open}
+        tone={modal.tone}
+        title={modal.title}
+        message={modal.message}
+        confirmText={modal.confirmText}
+        onConfirm={modal.onConfirm}
+        onClose={modal.onClose}
+      />
+      <Modal
+        open={Boolean(memberToDelete)}
+        tone="danger"
+        title="Delete member?"
+        message={memberToDelete ? `${memberToDelete.name} ${memberToDelete.lastName} will lose access to this organization.` : ''}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDeleteMember}
+        onCancel={() => setMemberToDelete(null)}
+      />
       <PageHeader
         title="Members"
         description="Manage users in your organization."
@@ -100,16 +114,18 @@ export function MembersPage() {
           <select className={inputClassName()} value={filters.status} onChange={(event) => setFilters({ ...filters, status: event.target.value, page: 1 })}>
             <option value="">All status</option>
             <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
+            <option value="inActive">Inactive</option>
           </select>
           <Button variant="secondary" onClick={loadMembers}>Apply</Button>
         </div>
       </div>
 
-      {error ? <div className="mx-5 mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-danger">{error}</div> : null}
+      <div className="mx-5 mt-4">
+        <Notice>{error}</Notice>
+      </div>
 
       <div className="overflow-x-auto bg-panel">
-        <table className="w-full min-w-[820px] text-left text-sm">
+        <table className="w-full min-w-[760px] text-left text-sm">
           <thead className="border-b border-line bg-surface text-xs uppercase text-muted">
             <tr>
               <th className="px-5 py-3 font-semibold">User</th>
@@ -120,36 +136,35 @@ export function MembersPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
-            {members.map((member) => (
-              <tr key={member.id} className="hover:bg-surface/70">
-                <td className="px-5 py-3">
-                  <p className="font-medium text-ink">{member.name} {member.lastName}</p>
-                  <p className="text-sm text-muted">{member.email}</p>
-                </td>
-                <td className="px-5 py-3">
-                  <select className={inputClassName('w-32')} value={drafts[member.id]?.role ?? member.role} onChange={(event) => updateDraft(member.id, { role: event.target.value })}>
-                    <option value="member">Member</option>
-                    <option value="admin">Admin</option>
-                    <option value="owner">Owner</option>
-                  </select>
-                </td>
-                <td className="px-5 py-3">
-                  <select className={inputClassName('w-32')} value={drafts[member.id]?.status ?? member.status ?? 'active'} onChange={(event) => updateDraft(member.id, { status: event.target.value })}>
-                    <option value="active">Active</option>
-                    <option value="inActive">Inactive</option>
-                  </select>
-                </td>
-                <td className="px-5 py-3 text-muted">{formatDate(member.createdAt)}</td>
-                <td className="px-5 py-3 text-right">
-                  <Button variant="ghost" onClick={() => updateMember(member)} title="Save member changes" aria-label="Save member changes" className="mr-1 w-10 px-0">
-                    <Save size={17} />
-                  </Button>
-                  <Button variant="ghost" onClick={() => deleteMember(member)} title="Delete member" aria-label="Delete member" className="w-10 px-0 text-danger">
-                    <Trash2 size={17} />
-                  </Button>
-                </td>
-              </tr>
-            ))}
+            {members.map((member) => {
+              const manageable = canManageMember(user, member)
+
+              return (
+                <tr key={member.id} className="hover:bg-surface/70">
+                  <td className="px-5 py-3">
+                    <p className="font-medium text-ink">{member.name} {member.lastName}</p>
+                    <p className="text-sm text-muted">{member.email}</p>
+                  </td>
+                  <td className="px-5 py-3"><StatusPill>{roleLabel(member.role)}</StatusPill></td>
+                  <td className="px-5 py-3">
+                    <StatusPill tone={member.status === 'active' ? 'active' : 'neutral'}>{member.status ?? 'active'}</StatusPill>
+                  </td>
+                  <td className="px-5 py-3 text-muted">{formatDate(member.createdAt)}</td>
+                  <td className="px-5 py-3 text-right">
+                    {manageable ? (
+                      <>
+                        <Button variant="ghost" onClick={() => onNavigate('member-edit', { memberId: member.id })} title="Edit member" aria-label="Edit member" className="mr-1 w-10 px-0">
+                          <Edit3 size={17} />
+                        </Button>
+                        <Button variant="ghost" onClick={() => setMemberToDelete(member)} title="Delete member" aria-label="Delete member" className="w-10 px-0 text-danger">
+                          <Trash2 size={17} />
+                        </Button>
+                      </>
+                    ) : <span className="text-xs text-muted">Restricted</span>}
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
@@ -166,6 +181,102 @@ export function MembersPage() {
           <Button variant="secondary" disabled={filters.page >= pagination.totalPages} onClick={() => setFilters({ ...filters, page: filters.page + 1 })}>Next</Button>
         </div>
       </div>
+    </section>
+  )
+}
+
+export function MemberEditPage({ user, memberId, onNavigate }) {
+  const [member, setMember] = useState(null)
+  const [form, setForm] = useState({ role: 'member', status: 'active' })
+  const [notice, setNotice] = useState({ tone: 'error', message: '' })
+  const [successModal, setSuccessModal] = useState({ open: false })
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    const loadMember = async () => {
+      setLoading(true)
+      setNotice({ tone: 'error', message: '' })
+      try {
+        const data = await organizationApi.member(memberId)
+        setMember(data.user)
+        setForm({ role: data.user.role, status: data.user.status ?? 'active' })
+      } catch (err) {
+        setNotice({ tone: 'error', message: err.message })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadMember()
+  }, [memberId])
+
+  const saveMember = async (event) => {
+    event.preventDefault()
+    if (!member || !canManageMember(user, member)) return
+    setSaving(true)
+    setNotice({ tone: 'error', message: '' })
+    try {
+      await organizationApi.updateMember(memberId, form)
+      setSuccessModal({
+        open: true,
+        title: 'Member updated',
+        message: 'The member access settings were saved successfully.',
+      })
+    } catch (err) {
+      setNotice({ tone: 'error', message: err.message })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const ownerOnlyRole = user?.role !== 'owner'
+
+  return (
+    <section>
+      <Modal
+        open={successModal.open}
+        title={successModal.title}
+        message={successModal.message}
+        confirmText="Back to members"
+        onConfirm={() => onNavigate('members')}
+        onClose={() => onNavigate('members')}
+      />
+      <PageHeader
+        title="Edit Member"
+        description="Update organization member access and account status."
+        action={(
+          <Button variant="secondary" onClick={() => onNavigate('members')}>
+            <ArrowLeft size={16} />
+            Back
+          </Button>
+        )}
+      />
+
+      <form onSubmit={saveMember} className="grid max-w-2xl gap-5 p-5">
+        <Notice tone={notice.tone}>{notice.message}</Notice>
+        <div className="border-b border-line pb-4">
+          <p className="text-sm font-semibold text-ink">{member?.name} {member?.lastName}</p>
+          <p className="text-sm text-muted">{member?.email}</p>
+        </div>
+        <Field label="Role">
+          <select className={inputClassName()} value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })} disabled={loading || ownerOnlyRole}>
+            <option value="member">Member</option>
+            <option value="admin">Admin</option>
+            <option value="owner">Owner</option>
+          </select>
+        </Field>
+        <Field label="Status">
+          <select className={inputClassName()} value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })} disabled={loading}>
+            <option value="active">Active</option>
+            <option value="inActive">Inactive</option>
+          </select>
+        </Field>
+        <Button type="submit" disabled={saving || loading || !member || !canManageMember(user, member)} className="w-fit">
+          <Save size={17} />
+          {saving ? 'Saving...' : 'Save member'}
+        </Button>
+      </form>
     </section>
   )
 }
