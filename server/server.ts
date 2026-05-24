@@ -11,6 +11,7 @@ import authRoutes from "./src/routes/auth.routes.js";
 import invitationRoutes from './src/routes/invitation.routes.js'
 import organizationRoutes from './src/routes/organization.routes.js'
 import clientsRoutes from './src/routes/clients.routes.js'
+import productRoutes from './src/routes/products.routes.js'
 const app = express();
 
 const devOrigins = ['http://localhost:5173', 'http://localhost:5174']
@@ -30,6 +31,7 @@ app.use("/api/auth", authRoutes)
 app.use("/api/invitation", invitationRoutes)
 app.use("/api/organization", organizationRoutes)
 app.use("/api/clients", clientsRoutes)
+app.use("/api/products", productRoutes)
 
 app.use(errorMiddleware)
 
