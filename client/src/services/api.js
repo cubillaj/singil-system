@@ -97,3 +97,18 @@ export const productApi = {
   }),
   delete: (id) => apiRequest(`/api/products/${id}`, { method: 'DELETE' }),
 }
+
+export const invoiceApi = {
+  list: (params = {}) => apiRequest(`/api/invoices?${new URLSearchParams(params)}`),
+  get: (id) => apiRequest(`/api/invoices/${id}`),
+  create: (payload) => apiRequest('/api/invoices', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }),
+  update: (id, payload) => apiRequest(`/api/invoices/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  }),
+  delete: (id) => apiRequest(`/api/invoices/${id}`, { method: 'DELETE' }),
+  export: (id) => apiRequest(`/api/export-invoice/${id}`),
+}

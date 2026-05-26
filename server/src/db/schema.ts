@@ -166,7 +166,7 @@ export const invoices = pgTable("invoices", {
  
   invoiceNumber: varchar("invoice_number", { length: 50 }).notNull().unique(), // e.g. INV-0042
   status: invoiceStatusEnum("status").default("draft").notNull(),
-  currency: currencyEnum("currency").default("USD").notNull(),
+  currency: currencyEnum("currency").default("PH").notNull(),
  
   // Dates
   issueDate: timestamp("issue_date").notNull(),

@@ -4,6 +4,7 @@ import { useAuth } from './hooks/useAuth'
 import { AuthPage } from './pages/AuthPage'
 import { ClientFormPage, ClientsPage } from './pages/ClientsPage'
 import { InvitationCreatePage, InvitationsPage } from './pages/InvitationsPage'
+import { InvoiceDetailPage, InvoiceFormPage, InvoicesPage } from './pages/InvoicesPage'
 import { MemberEditPage, MembersPage } from './pages/MembersPage'
 import { OrganizationPage } from './pages/OrganizationPage'
 import { ProductFormPage, ProductsPage } from './pages/ProductsPage'
@@ -24,6 +25,10 @@ function canAccessPage(role, page) {
     products: ['admin', 'member', 'owner'],
     'product-new': ['admin', 'owner'],
     'product-edit': ['admin', 'owner'],
+    invoices: ['admin', 'member', 'owner'],
+    'invoice-new': ['admin', 'member', 'owner'],
+    'invoice-detail': ['admin', 'member', 'owner'],
+    'invoice-edit': ['admin', 'member', 'owner'],
     invitations: ['system_admin', 'admin', 'owner'],
     'invitation-new': ['system_admin', 'admin', 'owner'],
     organization: ['admin', 'owner'],
@@ -42,6 +47,10 @@ function pageToPath(page, params = {}) {
     products: '/dashboard/products',
     'product-new': '/dashboard/products/new',
     'product-edit': `/dashboard/products/${params.productId}/edit`,
+    invoices: '/dashboard/invoices',
+    'invoice-new': '/dashboard/invoices/new',
+    'invoice-detail': `/dashboard/invoices/${params.invoiceId}`,
+    'invoice-edit': `/dashboard/invoices/${params.invoiceId}/edit`,
     invitations: '/dashboard/invitations',
     'invitation-new': '/dashboard/invitations/new',
     organization: '/dashboard/organization',
@@ -59,6 +68,10 @@ function activePageFromPath(pathname) {
   if (pathname === '/dashboard/products/new') return 'product-new'
   if (pathname.startsWith('/dashboard/products/') && pathname.endsWith('/edit')) return 'product-edit'
   if (pathname === '/dashboard/products') return 'products'
+  if (pathname === '/dashboard/invoices/new') return 'invoice-new'
+  if (pathname.startsWith('/dashboard/invoices/') && pathname.endsWith('/edit')) return 'invoice-edit'
+  if (pathname.startsWith('/dashboard/invoices/')) return 'invoice-detail'
+  if (pathname === '/dashboard/invoices') return 'invoices'
   if (pathname === '/dashboard/invitations/new') return 'invitation-new'
   if (pathname === '/dashboard/invitations') return 'invitations'
   if (pathname === '/dashboard/organization') return 'organization'
@@ -68,6 +81,7 @@ function activePageFromPath(pathname) {
 function routeRootPage(page) {
   if (page.startsWith('client-')) return 'clients'
   if (page.startsWith('product-')) return 'products'
+  if (page.startsWith('invoice-')) return 'invoices'
   if (page.startsWith('member-')) return 'members'
   if (page.startsWith('invitation-')) return 'invitations'
   return page
@@ -94,6 +108,16 @@ function ProductEditRoute({ onNavigate }) {
 function MemberEditRoute({ user, onNavigate }) {
   const { memberId } = useParams()
   return <MemberEditPage user={user} memberId={memberId} onNavigate={onNavigate} />
+}
+
+function InvoiceDetailRoute({ onNavigate }) {
+  const { invoiceId } = useParams()
+  return <InvoiceDetailPage invoiceId={invoiceId} onNavigate={onNavigate} />
+}
+
+function InvoiceEditRoute({ onNavigate }) {
+  const { invoiceId } = useParams()
+  return <InvoiceFormPage invoiceId={invoiceId} onNavigate={onNavigate} />
 }
 
 function App() {
@@ -132,6 +156,10 @@ function App() {
         <Route path="/dashboard/products" element={<ProtectedPage user={auth.user} page="products"><ProductsPage user={auth.user} onNavigate={navigateToPage} /></ProtectedPage>} />
         <Route path="/dashboard/products/new" element={<ProtectedPage user={auth.user} page="product-new"><ProductFormPage onNavigate={navigateToPage} /></ProtectedPage>} />
         <Route path="/dashboard/products/:productId/edit" element={<ProtectedPage user={auth.user} page="product-edit"><ProductEditRoute onNavigate={navigateToPage} /></ProtectedPage>} />
+        <Route path="/dashboard/invoices" element={<ProtectedPage user={auth.user} page="invoices"><InvoicesPage onNavigate={navigateToPage} /></ProtectedPage>} />
+        <Route path="/dashboard/invoices/new" element={<ProtectedPage user={auth.user} page="invoice-new"><InvoiceFormPage onNavigate={navigateToPage} /></ProtectedPage>} />
+        <Route path="/dashboard/invoices/:invoiceId" element={<ProtectedPage user={auth.user} page="invoice-detail"><InvoiceDetailRoute onNavigate={navigateToPage} /></ProtectedPage>} />
+        <Route path="/dashboard/invoices/:invoiceId/edit" element={<ProtectedPage user={auth.user} page="invoice-edit"><InvoiceEditRoute onNavigate={navigateToPage} /></ProtectedPage>} />
         <Route path="/dashboard/invitations" element={<ProtectedPage user={auth.user} page="invitations"><InvitationsPage user={auth.user} onNavigate={navigateToPage} /></ProtectedPage>} />
         <Route path="/dashboard/invitations/new" element={<ProtectedPage user={auth.user} page="invitation-new"><InvitationCreatePage user={auth.user} onNavigate={navigateToPage} /></ProtectedPage>} />
         <Route path="/dashboard/organization" element={<ProtectedPage user={auth.user} page="organization"><OrganizationPage user={auth.user} onUpdated={auth.refresh} /></ProtectedPage>} />

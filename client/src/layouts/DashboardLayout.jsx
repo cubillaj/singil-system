@@ -1,4 +1,4 @@
-import { BriefcaseBusiness, Building2, LogOut, MailPlus, Package, Settings, Users } from 'lucide-react'
+import { BriefcaseBusiness, Building2, FileText, LogOut, MailPlus, Package, Settings, Users } from 'lucide-react'
 import { Button } from '../components/Button'
 import { getInitials, roleLabel } from '../utils/format'
 
@@ -6,6 +6,7 @@ const navItems = [
   { id: 'members', label: 'Members', icon: Users, roles: ['admin', 'owner'] },
   { id: 'clients', label: 'Clients', icon: BriefcaseBusiness, roles: ['admin', 'member', 'owner'] },
   { id: 'products', label: 'Products', icon: Package, roles: ['admin', 'member', 'owner'] },
+  { id: 'invoices', label: 'Invoices', icon: FileText, roles: ['admin', 'member', 'owner'] },
   { id: 'invitations', label: 'Invitations', icon: MailPlus, roles: ['system_admin', 'admin', 'owner'] },
   { id: 'organization', label: 'Organization', icon: Settings, roles: ['admin', 'owner'] },
 ]
@@ -13,6 +14,7 @@ const navItems = [
 function rootPage(page) {
   if (page.startsWith('client-')) return 'clients'
   if (page.startsWith('product-')) return 'products'
+  if (page.startsWith('invoice-')) return 'invoices'
   if (page.startsWith('member-')) return 'members'
   if (page.startsWith('invitation-')) return 'invitations'
   return page

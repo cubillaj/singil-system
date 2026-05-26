@@ -12,6 +12,8 @@ import invitationRoutes from './src/routes/invitation.routes.js'
 import organizationRoutes from './src/routes/organization.routes.js'
 import clientsRoutes from './src/routes/clients.routes.js'
 import productRoutes from './src/routes/products.routes.js'
+import invoicesRoutes from './src/routes/invoice.routes.js'
+import exportRoutes from './src/routes/export.routes.js'
 const app = express();
 
 const devOrigins = ['http://localhost:5173', 'http://localhost:5174']
@@ -32,6 +34,8 @@ app.use("/api/invitation", invitationRoutes)
 app.use("/api/organization", organizationRoutes)
 app.use("/api/clients", clientsRoutes)
 app.use("/api/products", productRoutes)
+app.use("/api/invoices", invoicesRoutes)
+app.use("/api/export-invoice", exportRoutes)
 
 app.use(errorMiddleware)
 
