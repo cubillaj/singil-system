@@ -1,17 +1,25 @@
-import { ArrowLeft, Edit3, RefreshCw, Save, Search, Trash2 } from 'lucide-react'
+import { ArrowLeft, Edit3, KeyRound, RefreshCw, Save, Search, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Button } from '../components/Button'
 import { EmptyState } from '../components/EmptyState'
 import { Field, inputClassName } from '../components/Form'
 import { Modal } from '../components/Modal'
+import { MobileCard, MobileList, MobileMeta } from '../components/MobileList'
 import { Notice } from '../components/Notice'
 import { PageHeader } from '../components/PageHeader'
 import { StatusPill } from '../components/StatusPill'
+import { useDebounce } from '../hooks/useDebounce'
 import { organizationApi } from '../services/api'
 import { formatDate, roleLabel } from '../utils/format'
 
 function canManageMember(currentUser, member) {
   if (currentUser?.role === 'owner') return true
+  return currentUser?.role === 'admin' && member.role === 'member'
+}
+
+function canChangeMemberPassword(currentUser, member) {
+  if (member.role === 'owner') return false
+  if (currentUser?.role === 'owner') return ['admin', 'member'].includes(member.role)
   return currentUser?.role === 'admin' && member.role === 'member'
 }
 
@@ -23,6 +31,7 @@ export function MembersPage({ user, onNavigate }) {
   const [modal, setModal] = useState({ open: false })
   const [memberToDelete, setMemberToDelete] = useState(null)
   const [loading, setLoading] = useState(false)
+  const debouncedSearch = useDebounce(filters.search)
 
   const loadMembers = async () => {
     setLoading(true)
@@ -42,7 +51,7 @@ export function MembersPage({ user, onNavigate }) {
   useEffect(() => {
     loadMembers()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.page, filters.status])
+  }, [filters.page, filters.status, debouncedSearch])
 
   const confirmDeleteMember = async () => {
     if (!memberToDelete || !canManageMember(user, memberToDelete)) return
@@ -124,7 +133,39 @@ export function MembersPage({ user, onNavigate }) {
         <Notice>{error}</Notice>
       </div>
 
-      <div className="overflow-x-auto bg-panel">
+      <MobileList>
+        {members.map((member) => {
+          const manageable = canManageMember(user, member)
+
+          return (
+            <MobileCard key={member.id}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-semibold text-ink">{member.name} {member.lastName}</p>
+                  <p className="mt-1 text-sm text-muted">{member.email}</p>
+                </div>
+                {manageable ? (
+                  <div className="flex shrink-0 gap-1">
+                    <Button variant="ghost" onClick={() => onNavigate('member-edit', { memberId: member.id })} title="Edit member" aria-label="Edit member" className="w-9 px-0">
+                      <Edit3 size={16} />
+                    </Button>
+                    <Button variant="ghost" onClick={() => setMemberToDelete(member)} title="Delete member" aria-label="Delete member" className="w-9 px-0 text-danger">
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
+              <div className="mt-4 grid grid-cols-3 gap-3">
+                <MobileMeta label="Role"><StatusPill>{roleLabel(member.role)}</StatusPill></MobileMeta>
+                <MobileMeta label="Status"><StatusPill tone={member.status === 'active' ? 'active' : 'neutral'}>{member.status ?? 'active'}</StatusPill></MobileMeta>
+                <MobileMeta label="Created">{formatDate(member.createdAt)}</MobileMeta>
+              </div>
+            </MobileCard>
+          )
+        })}
+      </MobileList>
+
+      <div className="hidden overflow-x-auto bg-panel md:block">
         <table className="w-full min-w-[760px] text-left text-sm">
           <thead className="border-b border-line bg-surface text-xs uppercase text-muted">
             <tr>
@@ -246,10 +287,18 @@ export function MemberEditPage({ user, memberId, onNavigate }) {
         title="Edit Member"
         description="Update organization member access and account status."
         action={(
-          <Button variant="secondary" onClick={() => onNavigate('members')}>
-            <ArrowLeft size={16} />
-            Back
-          </Button>
+          <div className="flex gap-2">
+            {member && canChangeMemberPassword(user, member) ? (
+              <Button variant="secondary" onClick={() => onNavigate('member-password', { memberId })}>
+                <KeyRound size={16} />
+                Change password
+              </Button>
+            ) : null}
+            <Button variant="secondary" onClick={() => onNavigate('members')}>
+              <ArrowLeft size={16} />
+              Back
+            </Button>
+          </div>
         )}
       />
 
@@ -275,6 +324,101 @@ export function MemberEditPage({ user, memberId, onNavigate }) {
         <Button type="submit" disabled={saving || loading || !member || !canManageMember(user, member)} className="w-fit">
           <Save size={17} />
           {saving ? 'Saving...' : 'Save member'}
+        </Button>
+      </form>
+    </section>
+  )
+}
+
+export function MemberPasswordPage({ user, memberId, onNavigate }) {
+  const [member, setMember] = useState(null)
+  const [form, setForm] = useState({ newPassword: '', confirmPassword: '' })
+  const [notice, setNotice] = useState({ tone: 'error', message: '' })
+  const [successModal, setSuccessModal] = useState({ open: false })
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    const loadMember = async () => {
+      setLoading(true)
+      setNotice({ tone: 'error', message: '' })
+      try {
+        const data = await organizationApi.member(memberId)
+        setMember(data.user)
+      } catch (err) {
+        setNotice({ tone: 'error', message: err.message })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadMember()
+  }, [memberId])
+
+  const submitPassword = async (event) => {
+    event.preventDefault()
+    if (!member || !canChangeMemberPassword(user, member)) return
+
+    if (form.newPassword !== form.confirmPassword) {
+      setNotice({ tone: 'error', message: 'New password and confirm password do not match' })
+      return
+    }
+
+    setSaving(true)
+    setNotice({ tone: 'error', message: '' })
+    try {
+      await organizationApi.changeMemberPassword(memberId, { newPassword: form.newPassword })
+      setSuccessModal({
+        open: true,
+        title: 'Password changed',
+        message: `${member.name} ${member.lastName}'s password was updated successfully.`,
+      })
+    } catch (err) {
+      setNotice({ tone: 'error', message: err.message })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <section>
+      <Modal
+        open={successModal.open}
+        title={successModal.title}
+        message={successModal.message}
+        confirmText="Back to members"
+        onConfirm={() => onNavigate('members')}
+        onClose={() => onNavigate('members')}
+      />
+      <PageHeader
+        title="Change Member Password"
+        description="Set a strong temporary password for an organization user."
+        action={(
+          <Button variant="secondary" onClick={() => onNavigate('member-edit', { memberId })}>
+            <ArrowLeft size={16} />
+            Back
+          </Button>
+        )}
+      />
+
+      <form onSubmit={submitPassword} className="grid max-w-2xl gap-5 p-5">
+        <Notice tone={notice.tone}>{notice.message}</Notice>
+        <div className="border-b border-line pb-4">
+          <p className="text-sm font-semibold text-ink">{member?.name} {member?.lastName}</p>
+          <p className="text-sm text-muted">{member?.email}</p>
+        </div>
+        {!loading && member && !canChangeMemberPassword(user, member) ? (
+          <Notice tone="warning">You cannot change this user's password.</Notice>
+        ) : null}
+        <Field label="New password">
+          <input className={inputClassName()} type="password" value={form.newPassword} onChange={(event) => setForm({ ...form, newPassword: event.target.value })} required disabled={loading || !member || !canChangeMemberPassword(user, member)} />
+        </Field>
+        <Field label="Confirm new password">
+          <input className={inputClassName()} type="password" value={form.confirmPassword} onChange={(event) => setForm({ ...form, confirmPassword: event.target.value })} required disabled={loading || !member || !canChangeMemberPassword(user, member)} />
+        </Field>
+        <Button type="submit" disabled={saving || loading || !member || !canChangeMemberPassword(user, member)} className="w-fit">
+          <Save size={17} />
+          {saving ? 'Saving...' : 'Change password'}
         </Button>
       </form>
     </section>

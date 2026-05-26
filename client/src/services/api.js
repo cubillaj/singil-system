@@ -51,10 +51,26 @@ export const organizationApi = {
     method: 'PUT',
     body: JSON.stringify(payload),
   }),
+  changeMemberPassword: (id, payload) => apiRequest(`/api/organization/${id}/password`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  }),
   deleteMember: (id) => apiRequest(`/api/organization/${id}`, { method: 'DELETE' }),
   updateProfile: (payload) => apiRequest('/api/organization/org-profile', {
     method: 'PUT',
     body: payload,
+  }),
+}
+
+export const userApi = {
+  info: () => apiRequest('/api/users/user-info'),
+  update: (payload) => apiRequest('/api/users', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  }),
+  changePassword: (payload) => apiRequest('/api/users/password', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
   }),
 }
 

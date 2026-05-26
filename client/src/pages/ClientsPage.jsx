@@ -4,9 +4,11 @@ import { Button } from '../components/Button'
 import { EmptyState } from '../components/EmptyState'
 import { Field, inputClassName } from '../components/Form'
 import { Modal } from '../components/Modal'
+import { MobileCard, MobileList, MobileMeta } from '../components/MobileList'
 import { Notice } from '../components/Notice'
 import { PageHeader } from '../components/PageHeader'
 import { StatusPill } from '../components/StatusPill'
+import { useDebounce } from '../hooks/useDebounce'
 import { clientApi } from '../services/api'
 
 const emptyForm = {
@@ -26,11 +28,11 @@ const emptyForm = {
 
 const currencies = ['PH', 'USD', 'EUR', 'CAD', 'AUD']
 
-function cleanPayload(form) {
+function cleanPayload(form, { keepEmpty = false } = {}) {
   return Object.fromEntries(
     Object.entries(form)
       .map(([key, value]) => [key, typeof value === 'string' ? value.trim() : value])
-      .filter(([, value]) => value !== ''),
+      .filter(([, value]) => keepEmpty || value !== ''),
   )
 }
 
@@ -60,6 +62,7 @@ export function ClientsPage({ onNavigate }) {
   const [modal, setModal] = useState({ open: false })
   const [clientToDelete, setClientToDelete] = useState(null)
   const [loading, setLoading] = useState(false)
+  const debouncedSearch = useDebounce(filters.search)
 
   const loadClients = async () => {
     setLoading(true)
@@ -79,7 +82,7 @@ export function ClientsPage({ onNavigate }) {
   useEffect(() => {
     loadClients()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.page, filters.currency, filters.sortOrder])
+  }, [filters.page, filters.currency, filters.sortOrder, debouncedSearch])
 
   const confirmDeleteClient = async () => {
     if (!clientToDelete) return
@@ -172,7 +175,34 @@ export function ClientsPage({ onNavigate }) {
         <Notice tone={notice.tone}>{notice.message}</Notice>
       </div>
 
-      <div className="overflow-x-auto bg-panel">
+      <MobileList>
+        {clients.map((client) => (
+          <MobileCard key={client.id}>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-semibold text-ink">{client.name}</p>
+                <p className="mt-1 text-sm text-muted">{client.email}</p>
+              </div>
+              <div className="flex shrink-0 gap-1">
+                <Button variant="ghost" className="w-9 px-0" title="Edit client" aria-label="Edit client" onClick={() => onNavigate('client-edit', { clientId: client.id })}>
+                  <Edit3 size={16} />
+                </Button>
+                <Button variant="ghost" className="w-9 px-0 text-danger" title="Delete client" aria-label="Delete client" onClick={() => setClientToDelete(client)}>
+                  <Trash2 size={16} />
+                </Button>
+              </div>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <MobileMeta label="Contact">{client.contactPerson || client.contactPhone || 'None'}</MobileMeta>
+              <MobileMeta label="Company">{client.company || 'None'}</MobileMeta>
+              <MobileMeta label="Currency"><StatusPill>{client.currency || 'None'}</StatusPill></MobileMeta>
+              <MobileMeta label="Location">{[client.city, client.country].filter(Boolean).join(', ') || 'None'}</MobileMeta>
+            </div>
+          </MobileCard>
+        ))}
+      </MobileList>
+
+      <div className="hidden overflow-x-auto bg-panel md:block">
         <table className="w-full min-w-[760px] text-left text-sm">
           <thead className="border-b border-line bg-surface text-xs uppercase text-muted">
             <tr>
@@ -256,7 +286,7 @@ export function ClientFormPage({ clientId, onNavigate }) {
     setSaving(true)
     setNotice({ tone: 'error', message: '' })
     try {
-      const payload = cleanPayload(form)
+      const payload = cleanPayload(form, { keepEmpty: isEditing })
       if (isEditing) {
         await clientApi.update(clientId, payload)
       } else {

@@ -5,8 +5,9 @@ import { AuthPage } from './pages/AuthPage'
 import { ClientFormPage, ClientsPage } from './pages/ClientsPage'
 import { InvitationCreatePage, InvitationsPage } from './pages/InvitationsPage'
 import { InvoiceDetailPage, InvoiceFormPage, InvoicesPage } from './pages/InvoicesPage'
-import { MemberEditPage, MembersPage } from './pages/MembersPage'
+import { MemberEditPage, MemberPasswordPage, MembersPage } from './pages/MembersPage'
 import { OrganizationPage } from './pages/OrganizationPage'
+import { ChangePasswordPage, ProfileEditPage, ProfilePage } from './pages/ProfilePage'
 import { ProductFormPage, ProductsPage } from './pages/ProductsPage'
 
 function defaultPageForRole(role) {
@@ -19,6 +20,7 @@ function canAccessPage(role, page) {
   const access = {
     members: ['admin', 'owner'],
     'member-edit': ['admin', 'owner'],
+    'member-password': ['admin', 'owner'],
     clients: ['admin', 'member', 'owner'],
     'client-new': ['admin', 'member', 'owner'],
     'client-edit': ['admin', 'member', 'owner'],
@@ -32,6 +34,9 @@ function canAccessPage(role, page) {
     invitations: ['system_admin', 'admin', 'owner'],
     'invitation-new': ['system_admin', 'admin', 'owner'],
     organization: ['admin', 'owner'],
+    profile: ['system_admin', 'admin', 'member', 'owner'],
+    'profile-edit': ['system_admin', 'admin', 'member', 'owner'],
+    'profile-password': ['system_admin', 'admin', 'member', 'owner'],
   }
 
   return access[page]?.includes(role) ?? false
@@ -41,6 +46,7 @@ function pageToPath(page, params = {}) {
   const paths = {
     members: '/dashboard/members',
     'member-edit': `/dashboard/members/${params.memberId}/edit`,
+    'member-password': `/dashboard/members/${params.memberId}/password`,
     clients: '/dashboard/clients',
     'client-new': '/dashboard/clients/new',
     'client-edit': `/dashboard/clients/${params.clientId}/edit`,
@@ -54,6 +60,9 @@ function pageToPath(page, params = {}) {
     invitations: '/dashboard/invitations',
     'invitation-new': '/dashboard/invitations/new',
     organization: '/dashboard/organization',
+    profile: '/dashboard/profile',
+    'profile-edit': '/dashboard/profile/edit',
+    'profile-password': '/dashboard/profile/password',
   }
 
   return paths[page] ?? '/dashboard'
@@ -61,6 +70,7 @@ function pageToPath(page, params = {}) {
 
 function activePageFromPath(pathname) {
   if (pathname.startsWith('/dashboard/members/') && pathname.endsWith('/edit')) return 'member-edit'
+  if (pathname.startsWith('/dashboard/members/') && pathname.endsWith('/password')) return 'member-password'
   if (pathname === '/dashboard/members') return 'members'
   if (pathname === '/dashboard/clients/new') return 'client-new'
   if (pathname.startsWith('/dashboard/clients/') && pathname.endsWith('/edit')) return 'client-edit'
@@ -75,6 +85,9 @@ function activePageFromPath(pathname) {
   if (pathname === '/dashboard/invitations/new') return 'invitation-new'
   if (pathname === '/dashboard/invitations') return 'invitations'
   if (pathname === '/dashboard/organization') return 'organization'
+  if (pathname === '/dashboard/profile/edit') return 'profile-edit'
+  if (pathname === '/dashboard/profile/password') return 'profile-password'
+  if (pathname === '/dashboard/profile') return 'profile'
   return 'dashboard'
 }
 
@@ -84,6 +97,7 @@ function routeRootPage(page) {
   if (page.startsWith('invoice-')) return 'invoices'
   if (page.startsWith('member-')) return 'members'
   if (page.startsWith('invitation-')) return 'invitations'
+  if (page.startsWith('profile-')) return 'profile'
   return page
 }
 
@@ -108,6 +122,11 @@ function ProductEditRoute({ onNavigate }) {
 function MemberEditRoute({ user, onNavigate }) {
   const { memberId } = useParams()
   return <MemberEditPage user={user} memberId={memberId} onNavigate={onNavigate} />
+}
+
+function MemberPasswordRoute({ user, onNavigate }) {
+  const { memberId } = useParams()
+  return <MemberPasswordPage user={user} memberId={memberId} onNavigate={onNavigate} />
 }
 
 function InvoiceDetailRoute({ onNavigate }) {
@@ -150,6 +169,7 @@ function App() {
         <Route path="/dashboard" element={<Navigate to={defaultPageForRole(auth.user?.role)} replace />} />
         <Route path="/dashboard/members" element={<ProtectedPage user={auth.user} page="members"><MembersPage user={auth.user} onNavigate={navigateToPage} /></ProtectedPage>} />
         <Route path="/dashboard/members/:memberId/edit" element={<ProtectedPage user={auth.user} page="member-edit"><MemberEditRoute user={auth.user} onNavigate={navigateToPage} /></ProtectedPage>} />
+        <Route path="/dashboard/members/:memberId/password" element={<ProtectedPage user={auth.user} page="member-password"><MemberPasswordRoute user={auth.user} onNavigate={navigateToPage} /></ProtectedPage>} />
         <Route path="/dashboard/clients" element={<ProtectedPage user={auth.user} page="clients"><ClientsPage onNavigate={navigateToPage} /></ProtectedPage>} />
         <Route path="/dashboard/clients/new" element={<ProtectedPage user={auth.user} page="client-new"><ClientFormPage onNavigate={navigateToPage} /></ProtectedPage>} />
         <Route path="/dashboard/clients/:clientId/edit" element={<ProtectedPage user={auth.user} page="client-edit"><ClientEditRoute onNavigate={navigateToPage} /></ProtectedPage>} />
@@ -163,6 +183,9 @@ function App() {
         <Route path="/dashboard/invitations" element={<ProtectedPage user={auth.user} page="invitations"><InvitationsPage user={auth.user} onNavigate={navigateToPage} /></ProtectedPage>} />
         <Route path="/dashboard/invitations/new" element={<ProtectedPage user={auth.user} page="invitation-new"><InvitationCreatePage user={auth.user} onNavigate={navigateToPage} /></ProtectedPage>} />
         <Route path="/dashboard/organization" element={<ProtectedPage user={auth.user} page="organization"><OrganizationPage user={auth.user} onUpdated={auth.refresh} /></ProtectedPage>} />
+        <Route path="/dashboard/profile" element={<ProtectedPage user={auth.user} page="profile"><ProfilePage onNavigate={navigateToPage} /></ProtectedPage>} />
+        <Route path="/dashboard/profile/edit" element={<ProtectedPage user={auth.user} page="profile-edit"><ProfileEditPage onNavigate={navigateToPage} onUpdated={auth.refresh} /></ProtectedPage>} />
+        <Route path="/dashboard/profile/password" element={<ProtectedPage user={auth.user} page="profile-password"><ChangePasswordPage onNavigate={navigateToPage} /></ProtectedPage>} />
         <Route path="*" element={<Navigate to={defaultPageForRole(auth.user?.role)} replace />} />
       </Routes>
     </DashboardLayout>

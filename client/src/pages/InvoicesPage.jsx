@@ -4,9 +4,11 @@ import { Button } from '../components/Button'
 import { EmptyState } from '../components/EmptyState'
 import { Field, inputClassName } from '../components/Form'
 import { Modal } from '../components/Modal'
+import { MobileCard, MobileList, MobileMeta } from '../components/MobileList'
 import { Notice } from '../components/Notice'
 import { PageHeader } from '../components/PageHeader'
 import { StatusPill } from '../components/StatusPill'
+import { useDebounce } from '../hooks/useDebounce'
 import { clientApi, invoiceApi, productApi } from '../services/api'
 import { formatDate } from '../utils/format'
 
@@ -27,12 +29,12 @@ const emptyInvoice = {
   items: [{ productId: '', description: '', quantity: '1', unitPrice: '', taxRate: '0', discount: '0' }],
 }
 
-function cleanPayload(form) {
+function cleanPayload(form, { keepEmpty = false } = {}) {
   const payload = Object.fromEntries(
     Object.entries(form)
       .filter(([key]) => key !== 'items')
       .map(([key, value]) => [key, typeof value === 'string' ? value.trim() : value])
-      .filter(([, value]) => value !== ''),
+      .filter(([, value]) => keepEmpty || value !== ''),
   )
 
   return {
@@ -42,7 +44,7 @@ function cleanPayload(form) {
       ...Object.fromEntries(
         Object.entries(item)
           .map(([key, value]) => [key, typeof value === 'string' ? value.trim() : value])
-          .filter(([, value]) => value !== ''),
+          .filter(([, value]) => keepEmpty || value !== ''),
       ),
       productId: item.productId ? Number(item.productId) : null,
     })),
@@ -84,6 +86,12 @@ function money(currency, value) {
   return `${currency ?? 'PH'} ${Number(value ?? 0).toFixed(2)}`
 }
 
+function productLabel(productsById, productId) {
+  if (!productId) return ''
+  const product = productsById[String(productId)]
+  return product?.name ?? `Product #${productId}`
+}
+
 export function InvoicesPage({ onNavigate }) {
   const [invoices, setInvoices] = useState([])
   const [pagination, setPagination] = useState({ page: 1, limit: 10, totalPages: 1, total: 0 })
@@ -92,6 +100,7 @@ export function InvoicesPage({ onNavigate }) {
   const [invoiceToDelete, setInvoiceToDelete] = useState(null)
   const [modal, setModal] = useState({ open: false })
   const [loading, setLoading] = useState(false)
+  const debouncedSearch = useDebounce(filters.search)
 
   const loadInvoices = async () => {
     setLoading(true)
@@ -111,7 +120,7 @@ export function InvoicesPage({ onNavigate }) {
   useEffect(() => {
     loadInvoices()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.page, filters.status, filters.currency, filters.sortOrder])
+  }, [filters.page, filters.status, filters.currency, filters.sortOrder, debouncedSearch])
 
   const confirmDeleteInvoice = async () => {
     if (!invoiceToDelete) return
@@ -164,7 +173,32 @@ export function InvoicesPage({ onNavigate }) {
       </div>
 
       <div className="mx-5 mt-4"><Notice tone={notice.tone}>{notice.message}</Notice></div>
-      <div className="overflow-x-auto bg-panel">
+      <MobileList>
+        {invoices.map((invoice) => (
+          <MobileCard key={invoice.id}>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-semibold text-ink">{invoice.invoiceNumber}</p>
+                <p className="mt-1 text-sm text-muted">{invoice.client?.name ?? 'Unknown client'}</p>
+              </div>
+              <div className="flex shrink-0 gap-1">
+                <Button variant="ghost" className="w-9 px-0" title="View invoice" aria-label="View invoice" onClick={() => onNavigate('invoice-detail', { invoiceId: invoice.id })}><Eye size={16} /></Button>
+                <Button variant="ghost" className="w-9 px-0" title="Edit invoice" aria-label="Edit invoice" onClick={() => onNavigate('invoice-edit', { invoiceId: invoice.id })}><Edit3 size={16} /></Button>
+                <Button variant="ghost" className="w-9 px-0 text-danger" title="Delete invoice" aria-label="Delete invoice" onClick={() => setInvoiceToDelete(invoice)}><Trash2 size={16} /></Button>
+              </div>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <MobileMeta label="Issue">{formatDate(invoice.issueDate)}</MobileMeta>
+              <MobileMeta label="Due">{formatDate(invoice.dueDate)}</MobileMeta>
+              <MobileMeta label="Total">{money(invoice.currency, invoice.total)}</MobileMeta>
+              <MobileMeta label="Balance">{money(invoice.currency, invoice.amountDue)}</MobileMeta>
+              <MobileMeta label="Status"><StatusPill tone={statusTone(invoice.status)}>{invoice.status}</StatusPill></MobileMeta>
+            </div>
+          </MobileCard>
+        ))}
+      </MobileList>
+
+      <div className="hidden overflow-x-auto bg-panel md:block">
         <table className="w-full min-w-[900px] text-left text-sm">
           <thead className="border-b border-line bg-surface text-xs uppercase text-muted">
             <tr>
@@ -213,6 +247,8 @@ export function InvoiceFormPage({ invoiceId, onNavigate }) {
   const [form, setForm] = useState(emptyInvoice)
   const [clients, setClients] = useState([])
   const [products, setProducts] = useState([])
+  const [productsById, setProductsById] = useState({})
+  const [productPicker, setProductPicker] = useState({ index: null, query: '', results: [] })
   const [notice, setNotice] = useState({ tone: 'error', message: '' })
   const [successModal, setSuccessModal] = useState({ open: false })
   const [loading, setLoading] = useState(true)
@@ -224,11 +260,12 @@ export function InvoiceFormPage({ invoiceId, onNavigate }) {
       try {
         const [clientsData, productsData, invoiceData] = await Promise.all([
           clientApi.list({ limit: 10 }),
-          productApi.list({ limit: 100 }),
+          productApi.list({ limit: 10 }),
           isEditing ? invoiceApi.get(invoiceId) : Promise.resolve(null),
         ])
         setClients(clientsData.clients ?? [])
         setProducts(productsData.products ?? [])
+        setProductsById(Object.fromEntries((productsData.products ?? []).map((product) => [String(product.id), product])))
         if (invoiceData?.invoice) setForm(invoiceToForm(invoiceData.invoice))
       } catch (err) {
         setNotice({ tone: 'error', message: err.message })
@@ -238,6 +275,38 @@ export function InvoiceFormPage({ invoiceId, onNavigate }) {
     }
     loadData()
   }, [invoiceId, isEditing])
+
+  useEffect(() => {
+    if (productPicker.index === null) return undefined
+
+    let cancelled = false
+    const timer = window.setTimeout(async () => {
+      const query = productPicker.query.trim()
+
+      if (!query) {
+        setProductPicker((current) => current.index === null ? current : { ...current, results: products })
+        return
+      }
+
+      try {
+        const data = await productApi.list({ search: query, limit: 10 })
+        if (!cancelled) {
+          setProductsById((current) => ({
+            ...current,
+            ...Object.fromEntries((data.products ?? []).map((product) => [String(product.id), product])),
+          }))
+          setProductPicker((current) => current.index === null ? current : { ...current, results: data.products ?? [] })
+        }
+      } catch (err) {
+        if (!cancelled) setNotice({ tone: 'error', message: err.message })
+      }
+    }, 250)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [productPicker.index, productPicker.query, products])
 
   const setItem = (index, changes) => {
     setForm((current) => ({
@@ -249,13 +318,28 @@ export function InvoiceFormPage({ invoiceId, onNavigate }) {
   const addItem = () => setForm({ ...form, items: [...form.items, { productId: '', description: '', quantity: '1', unitPrice: '', taxRate: '0', discount: '0' }] })
   const removeItem = (index) => setForm({ ...form, items: form.items.filter((_, itemIndex) => itemIndex !== index) })
 
-  const selectProduct = (index, productId) => {
-    const product = products.find((item) => String(item.id) === productId)
+  const selectProduct = (index, product) => {
+    if (!product) {
+      setItem(index, { productId: '', description: '', unitPrice: '', taxRate: '0' })
+      setProductPicker({ index: null, query: '', results: [] })
+      return
+    }
+
     setItem(index, {
-      productId,
+      productId: String(product.id),
       description: product?.description || product?.name || '',
       unitPrice: product?.unitPrice ?? '',
       taxRate: product?.taxRate ?? '0',
+    })
+    setProductsById((current) => ({ ...current, [String(product.id)]: product }))
+    setProductPicker({ index: null, query: '', results: [] })
+  }
+
+  const openProductPicker = (index) => {
+    setProductPicker({
+      index,
+      query: productLabel(productsById, form.items[index]?.productId),
+      results: products,
     })
   }
 
@@ -272,7 +356,7 @@ export function InvoiceFormPage({ invoiceId, onNavigate }) {
     setSaving(true)
     setNotice({ tone: 'error', message: '' })
     try {
-      const payload = cleanPayload(form)
+      const payload = cleanPayload(form, { keepEmpty: isEditing })
       if (isEditing) await invoiceApi.update(invoiceId, payload)
       else await invoiceApi.create(payload)
       setSuccessModal({ open: true, title: isEditing ? 'Invoice updated' : 'Invoice created', message: 'The invoice was saved successfully.' })
@@ -320,10 +404,44 @@ export function InvoiceFormPage({ invoiceId, onNavigate }) {
           {form.items.map((item, index) => (
             <div key={index} className="grid gap-3 border-t border-line pt-4 md:grid-cols-[1.2fr_1.4fr_90px_120px_90px_90px_44px]">
               <Field label="Product">
-                <select className={inputClassName()} value={item.productId} onChange={(event) => selectProduct(index, event.target.value)} disabled={loading}>
-                  <option value="">Manual item</option>
-                  {products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
-                </select>
+                <div className="relative">
+                  <input
+                    className={inputClassName('w-full')}
+                    value={productPicker.index === index ? productPicker.query : productLabel(productsById, item.productId)}
+                    onFocus={() => openProductPicker(index)}
+                    onChange={(event) => setProductPicker({ index, query: event.target.value, results: productPicker.index === index ? productPicker.results : products })}
+                    placeholder="Search product or leave manual"
+                    disabled={loading}
+                  />
+                  {productPicker.index === index ? (
+                    <div className="absolute left-0 right-0 top-11 z-20 max-h-64 overflow-y-auto rounded-md border border-line bg-panel shadow-lg">
+                      <button
+                        type="button"
+                        className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-surface"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => selectProduct(index, null)}
+                      >
+                        <span>Manual item</span>
+                        <span className="text-xs text-muted">No product</span>
+                      </button>
+                      {productPicker.results.map((product) => (
+                        <button
+                          key={product.id}
+                          type="button"
+                          className="grid w-full gap-0.5 px-3 py-2 text-left text-sm hover:bg-surface"
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => selectProduct(index, product)}
+                        >
+                          <span className="font-medium text-ink">{product.name}</span>
+                          <span className="text-xs text-muted">{product.unit ?? 'item'} · {money(form.currency, product.unitPrice)} · Tax {product.taxRate ?? '0'}%</span>
+                        </button>
+                      ))}
+                      {productPicker.results.length === 0 ? (
+                        <p className="px-3 py-2 text-sm text-muted">No products found</p>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
               </Field>
               <Field label="Description">
                 <input className={inputClassName()} value={item.description} onChange={(event) => setItem(index, { description: event.target.value })} required disabled={loading} />
@@ -408,7 +526,22 @@ export function InvoiceDetailPage({ invoiceId, onNavigate }) {
             <div><p className="text-xs text-muted">Due</p><p className="font-semibold">{formatDate(invoice.dueDate)}</p></div>
             <div><p className="text-xs text-muted">Status</p><StatusPill tone={statusTone(invoice.status)}>{invoice.status}</StatusPill></div>
           </div>
-          <div className="overflow-x-auto bg-panel">
+          <MobileList>
+            {invoice.items?.map((item) => (
+              <MobileCard key={item.id}>
+                <p className="font-semibold text-ink">{item.description}</p>
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <MobileMeta label="Qty">{item.quantity}</MobileMeta>
+                  <MobileMeta label="Unit">{money(invoice.currency, item.unitPrice)}</MobileMeta>
+                  <MobileMeta label="Tax">{item.taxRate}%</MobileMeta>
+                  <MobileMeta label="Discount">{item.discount}%</MobileMeta>
+                  <MobileMeta label="Total">{money(invoice.currency, item.total)}</MobileMeta>
+                </div>
+              </MobileCard>
+            ))}
+          </MobileList>
+
+          <div className="hidden overflow-x-auto bg-panel md:block">
             <table className="w-full min-w-[720px] text-left text-sm">
               <thead className="border-b border-line bg-surface text-xs uppercase text-muted"><tr><th className="px-5 py-3">Description</th><th className="px-5 py-3">Qty</th><th className="px-5 py-3">Unit</th><th className="px-5 py-3">Tax</th><th className="px-5 py-3">Discount</th><th className="px-5 py-3">Total</th></tr></thead>
               <tbody className="divide-y divide-line">

@@ -4,9 +4,11 @@ import { Button } from '../components/Button'
 import { EmptyState } from '../components/EmptyState'
 import { Field, inputClassName } from '../components/Form'
 import { Modal } from '../components/Modal'
+import { MobileCard, MobileList, MobileMeta } from '../components/MobileList'
 import { Notice } from '../components/Notice'
 import { PageHeader } from '../components/PageHeader'
 import { StatusPill } from '../components/StatusPill'
+import { useDebounce } from '../hooks/useDebounce'
 import { productApi } from '../services/api'
 
 const emptyForm = {
@@ -17,11 +19,11 @@ const emptyForm = {
   taxRate: '0',
 }
 
-function cleanPayload(form) {
+function cleanPayload(form, { keepEmpty = false } = {}) {
   return Object.fromEntries(
     Object.entries(form)
       .map(([key, value]) => [key, typeof value === 'string' ? value.trim() : value])
-      .filter(([, value]) => value !== ''),
+      .filter(([, value]) => keepEmpty || value !== ''),
   )
 }
 
@@ -44,6 +46,7 @@ export function ProductsPage({ user, onNavigate }) {
   const [modal, setModal] = useState({ open: false })
   const [productToDelete, setProductToDelete] = useState(null)
   const [loading, setLoading] = useState(false)
+  const debouncedSearch = useDebounce(filters.search)
 
   const loadProducts = async () => {
     setLoading(true)
@@ -63,7 +66,7 @@ export function ProductsPage({ user, onNavigate }) {
   useEffect(() => {
     loadProducts()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.page, filters.sortOrder])
+  }, [filters.page, filters.sortOrder, debouncedSearch])
 
   const confirmDeleteProduct = async () => {
     if (!canManageProducts) return
@@ -153,7 +156,35 @@ export function ProductsPage({ user, onNavigate }) {
         <Notice tone={notice.tone}>{notice.message}</Notice>
       </div>
 
-      <div className="overflow-x-auto bg-panel">
+      <MobileList>
+        {products.map((product) => (
+          <MobileCard key={product.id}>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-semibold text-ink">{product.name}</p>
+                <p className="mt-1 text-sm text-muted">{product.description || 'No description'}</p>
+              </div>
+              {canManageProducts ? (
+                <div className="flex shrink-0 gap-1">
+                  <Button variant="ghost" className="w-9 px-0" title="Edit product" aria-label="Edit product" onClick={() => onNavigate('product-edit', { productId: product.id })}>
+                    <Edit3 size={16} />
+                  </Button>
+                  <Button variant="ghost" className="w-9 px-0 text-danger" title="Delete product" aria-label="Delete product" onClick={() => setProductToDelete(product)}>
+                    <Trash2 size={16} />
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+            <div className="mt-4 grid grid-cols-3 gap-3">
+              <MobileMeta label="Unit">{product.unit}</MobileMeta>
+              <MobileMeta label="Price">{product.unitPrice}</MobileMeta>
+              <MobileMeta label="Tax">{product.taxRate ?? '0'}%</MobileMeta>
+            </div>
+          </MobileCard>
+        ))}
+      </MobileList>
+
+      <div className="hidden overflow-x-auto bg-panel md:block">
         <table className="w-full min-w-[720px] text-left text-sm">
           <thead className="border-b border-line bg-surface text-xs uppercase text-muted">
             <tr>
@@ -161,7 +192,6 @@ export function ProductsPage({ user, onNavigate }) {
               <th className="px-5 py-3 font-semibold">Unit</th>
               <th className="px-5 py-3 font-semibold">Price</th>
               <th className="px-5 py-3 font-semibold">Tax</th>
-              <th className="px-5 py-3 font-semibold">Status</th>
               {canManageProducts ? <th className="px-5 py-3 text-right font-semibold">Actions</th> : null}
             </tr>
           </thead>
@@ -175,9 +205,6 @@ export function ProductsPage({ user, onNavigate }) {
                 <td className="px-5 py-3 text-muted">{product.unit}</td>
                 <td className="px-5 py-3 font-medium">{product.unitPrice}</td>
                 <td className="px-5 py-3 text-muted">{product.taxRate ?? '0'}%</td>
-                <td className="px-5 py-3">
-                  <StatusPill tone={product.isArchived ? 'neutral' : 'active'}>{product.isArchived ? 'Archived' : 'Active'}</StatusPill>
-                </td>
                 {canManageProducts ? (
                   <td className="px-5 py-3 text-right">
                     <Button variant="ghost" className="mr-1 w-10 px-0" title="Edit product" aria-label="Edit product" onClick={() => onNavigate('product-edit', { productId: product.id })}>
@@ -241,7 +268,7 @@ export function ProductFormPage({ productId, onNavigate }) {
     setSaving(true)
     setNotice({ tone: 'error', message: '' })
     try {
-      const payload = cleanPayload(form)
+      const payload = cleanPayload(form, { keepEmpty: isEditing })
       if (isEditing) {
         await productApi.update(productId, payload)
       } else {

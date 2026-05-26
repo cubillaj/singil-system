@@ -49,7 +49,22 @@ export const SingleUserOrganizationSchema = z.object({
     userId: z.coerce.number({error: 'user id is required'}).positive()
 })
 
+export const ChangeOrganizationPasswordUserSchema = z.object({
+    targetUser: z.coerce.number( {error: 'User id is required.'}).int().positive(),
+    userId: z.coerce.number( {error: 'Current user id is required.'}).int().positive(),
+    userRole: z.enum(['admin', 'owner']),
+    organizationId: z.coerce.number({ error: 'Organization id is required.'}).int().positive(),
+    newPassword: z.string( {error: "New password is required"})
+        .min(8, 'Password must be at least 8 characters')
+        .max(72, 'Password must be 72 characters or fewer')
+        .regex(/[a-z]/, 'Password must include at least one lowercase letter')
+        .regex(/[A-Z]/, 'Password must include at least one uppercase letter')
+        .regex(/[0-9]/, 'Password must include at least one number')
+        .regex(/[^A-Za-z0-9]/, 'Password must include at least one special character'),
+})
+
 export type UpdateOrganization = z.infer<typeof UpdateOrganizationSchema>
 export type OrganizationMembersAndAdminQuery  = z.infer<typeof OrganizationMembersAndAdminQuerySchema>
 export type OrganizationUpdateUser = z.infer<typeof OrganizationUpdateUserSchema>
 export type SingleUserOrganization = z.infer<typeof SingleUserOrganizationSchema>
+export type ChangeOrganizationPasswordUser = z.infer<typeof ChangeOrganizationPasswordUserSchema>

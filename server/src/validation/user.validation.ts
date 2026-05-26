@@ -26,6 +26,42 @@ export const UserSchema = z.object({
     emailVerified: z.boolean().default(false)
 })
 
+export const UpdateUserSchema = UserSchema.pick({
+    name: true,
+    lastName: true,
+    email: true,
+    avatarUrl: true
+})
+.partial()
 
+
+export const UserChangePasswordSchema = z.object({
+    userId: z.coerce.number( {error: 'User id is required.'}).int().positive(),
+    currentPassword: z.string({ error: 'Current password is required.'}).min(1).max(75),
+    newPassword: z.string( {error: "New password is required"})
+            .min(8, 'Password must be at least 8 characters')
+            .max(72, 'Password must be 72 characters or fewer')
+            .regex(/[a-z]/, 'Password must include at least one lowercase letter')
+            .regex(/[A-Z]/, 'Password must include at least one uppercase letter')
+            .regex(/[0-9]/, 'Password must include at least one number')
+            .regex(/[^A-Za-z0-9]/, 'Password must include at least one special character'), 
+    confirmPassword: z.string( {error: "New password is required"})
+            .min(8, 'Password must be at least 8 characters')
+            .max(72, 'Password must be 72 characters or fewer')
+            .regex(/[a-z]/, 'Password must include at least one lowercase letter')
+            .regex(/[A-Z]/, 'Password must include at least one uppercase letter')
+            .regex(/[0-9]/, 'Password must include at least one number')
+            .regex(/[^A-Za-z0-9]/, 'Password must include at least one special character'), 
+}).superRefine((data, ctx) => {
+    if (data.newPassword !== data.confirmPassword) {
+        ctx.addIssue({
+            code: 'custom',
+            path: ['confirmPassword'],
+            message: 'New password and confirm password do not match'
+        })
+    }
+})
 
 export type User = z.infer<typeof UserSchema>
+export type UserChangePassword = z.infer<typeof UserChangePasswordSchema>
+export type UpdateUser = z.infer<typeof UpdateUserSchema>

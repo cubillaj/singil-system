@@ -2,11 +2,11 @@ import { and, eq, ne } from "drizzle-orm";
 import { db } from "../db/db.js";
 import { AppError } from "../utils/appError.js";
 import { getFirstZodMessage } from "../utils/zodErrors.js";
-import { DeleteOrganizationSchema, OrganizationUpdateUserSchema, SingleUserOrganization, SingleUserOrganizationSchema, UpdateOrganizationSchema } from "../validation/organization.validation.js";
+import { ChangeOrganizationPasswordUserSchema, DeleteOrganizationSchema, OrganizationUpdateUserSchema, SingleUserOrganization, SingleUserOrganizationSchema, UpdateOrganizationSchema } from "../validation/organization.validation.js";
 import { organizations, users } from "../db/schema.js";
 import { createSlug } from "../utils/slug.js";
 import { organizationFilters } from "../utils/organization.utils.js";
-
+import bcrypt from 'bcrypt'
 type UserRole = 'admin' | 'owner'
 export const getOrganizationMembersAndAdmin = async (organizationId: number, userRole: UserRole, query: unknown) => {
 
@@ -168,6 +168,68 @@ export const updateOrganizationUsers = async (data: unknown) => {
     if (!updatedUser) throw new AppError('Failed to update user', 400)
 
     return updatedUser
+}
+
+export const changePasswordOrganizationUsers = async (data: unknown) => {
+    const parsed = ChangeOrganizationPasswordUserSchema.safeParse(data)
+
+    if(!parsed.success) {
+        throw new AppError(getFirstZodMessage(parsed.error), 400)
+    }
+
+    const {targetUser, userId, organizationId, userRole, newPassword} = parsed.data
+
+    if (targetUser === userId) {
+        throw new AppError('You cannot change your own password here', 400)
+    }
+
+    const [existingUser] = await db.select({
+        id: users.id,
+        name: users.name,
+        role: users.role,
+        passwordHash: users.passwordHash
+    })
+                            .from(users)
+                            .where(and(
+                                eq(users.id, targetUser),
+                                eq(users.organizationId, organizationId),
+                                ne(users.role, 'system_admin')
+                            ))
+
+    if (!existingUser) throw new AppError('User not found', 404)
+
+    if (existingUser.role === 'owner') {
+        throw new AppError('Cannot change an owner password here', 403)
+    }
+
+    if (userRole === 'admin' && existingUser.role !== 'member') {
+        throw new AppError('Admins can only change member passwords', 403)
+    }
+
+    const isSamePassword = await bcrypt.compare(newPassword, existingUser.passwordHash)
+
+    if (isSamePassword) {
+        throw new AppError('New password must be different from the current password', 400)
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12)
+
+    const [user] = await db.update(users)
+                            .set({
+                                passwordHash
+                            })
+                            .where(and(
+                                eq(users.id, existingUser.id),
+                                eq(users.organizationId, organizationId),
+                                ne(users.role, 'system_admin')
+                            ))
+                            .returning({
+                                name: users.name
+                            })
+
+    if (!user) throw new AppError('Failed to change password user.', 400)
+
+    return user
 }
 
 export const deleteOrganizationUsers = async (data: unknown) => {

@@ -80,6 +80,36 @@ export const updateUserOrganizationController = async (req: Request, res: Respon
     }
 }
 
+export const changeUserOrganizationPasswordController = async (req: Request, res: Response) => {
+    try {
+        const targetUser = Number(req.params.id)
+        const session = req.authSession!
+
+        if (!Number.isInteger(targetUser) || targetUser <= 0) {
+            throw new AppError('Valid user id is required', 400)
+        }
+
+        if (session.organizationId === null) {
+            throw new AppError('Organization is required', 400)
+        }
+
+        const user = await OrganizationServices.changePasswordOrganizationUsers({
+            targetUser,
+            userId: session.userId,
+            userRole: session.role,
+            organizationId: session.organizationId,
+            ...req.body
+        })
+
+        return res.status(200).json({
+            message: 'Successfully changed user password.',
+            user
+        })
+    } catch (error) {
+        return handleControllererror(res, error)
+    }
+}
+
 export const deleteUserOrganizationController = async (req: Request, res: Response) => {
     try {
         const targetUser = Number(req.params.id)

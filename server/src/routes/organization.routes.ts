@@ -1,6 +1,6 @@
 import express from 'express'
 import { requireRole } from '../middleware/auth.middleware.js'
-import { deleteUserOrganizationController, getOrganizationMembersAndAdminController, getSingleOrganizationUserController, updateOrganizationController, updateUserOrganizationController } from '../controller/organization.controller.js'
+import { changeUserOrganizationPasswordController, deleteUserOrganizationController, getOrganizationMembersAndAdminController, getSingleOrganizationUserController, updateOrganizationController, updateUserOrganizationController } from '../controller/organization.controller.js'
 import { upload } from '../middleware/upload.middleware.js'
 
 const router = express.Router()
@@ -14,6 +14,7 @@ router.put(
     updateOrganizationController)
 
 router.get('/:id', requireRole(['admin', 'owner']), getSingleOrganizationUserController)
+router.put('/:id/password', requireRole(['admin', 'owner']), changeUserOrganizationPasswordController)
 router.put('/:id', requireRole(['admin', 'owner']), updateUserOrganizationController)
 router.delete('/:id', requireRole(['admin', 'owner']), deleteUserOrganizationController)
 

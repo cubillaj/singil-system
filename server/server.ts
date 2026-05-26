@@ -14,6 +14,7 @@ import clientsRoutes from './src/routes/clients.routes.js'
 import productRoutes from './src/routes/products.routes.js'
 import invoicesRoutes from './src/routes/invoice.routes.js'
 import exportRoutes from './src/routes/export.routes.js'
+import usersRoutes from './src/routes/users.routes.js'
 const app = express();
 
 const devOrigins = ['http://localhost:5173', 'http://localhost:5174']
@@ -30,6 +31,7 @@ app.use(express.json());
 app.use(cookieParser())
 app.use(sessionMiddleware)
 app.use("/api/auth", authRoutes)
+app.use("/api/users", usersRoutes)
 app.use("/api/invitation", invitationRoutes)
 app.use("/api/organization", organizationRoutes)
 app.use("/api/clients", clientsRoutes)
