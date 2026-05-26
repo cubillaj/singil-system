@@ -224,7 +224,7 @@ export function InvoiceFormPage({ invoiceId, onNavigate }) {
       try {
         const [clientsData, productsData, invoiceData] = await Promise.all([
           clientApi.list({ limit: 10 }),
-          productApi.list({ limit: 10 }),
+          productApi.list({ limit: 100 }),
           isEditing ? invoiceApi.get(invoiceId) : Promise.resolve(null),
         ])
         setClients(clientsData.clients ?? [])
@@ -319,16 +319,30 @@ export function InvoiceFormPage({ invoiceId, onNavigate }) {
           </div>
           {form.items.map((item, index) => (
             <div key={index} className="grid gap-3 border-t border-line pt-4 md:grid-cols-[1.2fr_1.4fr_90px_120px_90px_90px_44px]">
-              <select className={inputClassName()} value={item.productId} onChange={(event) => selectProduct(index, event.target.value)} disabled={loading}>
-                <option value="">Manual item</option>
-                {products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
-              </select>
-              <input className={inputClassName()} placeholder="Description" value={item.description} onChange={(event) => setItem(index, { description: event.target.value })} required disabled={loading} />
-              <input className={inputClassName()} type="number" min="0.01" step="0.01" value={item.quantity} onChange={(event) => setItem(index, { quantity: event.target.value })} required disabled={loading} />
-              <input className={inputClassName()} type="number" min="0" step="0.01" value={item.unitPrice} onChange={(event) => setItem(index, { unitPrice: event.target.value })} required disabled={loading} />
-              <input className={inputClassName()} type="number" min="0" step="0.01" value={item.taxRate} onChange={(event) => setItem(index, { taxRate: event.target.value })} disabled={loading} />
-              <input className={inputClassName()} type="number" min="0" step="0.01" value={item.discount} onChange={(event) => setItem(index, { discount: event.target.value })} disabled={loading} />
-              <Button type="button" variant="ghost" className="w-10 px-0 text-danger" onClick={() => removeItem(index)} disabled={form.items.length === 1}><Trash2 size={17} /></Button>
+              <Field label="Product">
+                <select className={inputClassName()} value={item.productId} onChange={(event) => selectProduct(index, event.target.value)} disabled={loading}>
+                  <option value="">Manual item</option>
+                  {products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
+                </select>
+              </Field>
+              <Field label="Description">
+                <input className={inputClassName()} value={item.description} onChange={(event) => setItem(index, { description: event.target.value })} required disabled={loading} />
+              </Field>
+              <Field label="Qty">
+                <input className={inputClassName()} type="number" min="0.01" step="0.01" value={item.quantity} onChange={(event) => setItem(index, { quantity: event.target.value })} required disabled={loading} />
+              </Field>
+              <Field label="Unit price">
+                <input className={inputClassName()} type="number" min="0" step="0.01" value={item.unitPrice} onChange={(event) => setItem(index, { unitPrice: event.target.value })} required disabled={loading} />
+              </Field>
+              <Field label="Tax %">
+                <input className={inputClassName()} type="number" min="0" step="0.01" value={item.taxRate} onChange={(event) => setItem(index, { taxRate: event.target.value })} disabled={loading} />
+              </Field>
+              <Field label="Discount %">
+                <input className={inputClassName()} type="number" min="0" step="0.01" value={item.discount} onChange={(event) => setItem(index, { discount: event.target.value })} disabled={loading} />
+              </Field>
+              <div className="flex items-end">
+                <Button type="button" variant="ghost" className="w-10 px-0 text-danger" onClick={() => removeItem(index)} disabled={form.items.length === 1} aria-label="Remove item" title="Remove item"><Trash2 size={17} /></Button>
+              </div>
             </div>
           ))}
         </div>
@@ -349,7 +363,6 @@ export function InvoiceFormPage({ invoiceId, onNavigate }) {
 
 export function InvoiceDetailPage({ invoiceId, onNavigate }) {
   const [invoice, setInvoice] = useState(null)
-  const [exportData, setExportData] = useState(null)
   const [notice, setNotice] = useState({ tone: 'error', message: '' })
   const [loading, setLoading] = useState(true)
 
@@ -371,8 +384,13 @@ export function InvoiceDetailPage({ invoiceId, onNavigate }) {
   const loadExport = async () => {
     setNotice({ tone: 'error', message: '' })
     try {
-      const data = await invoiceApi.export(invoiceId)
-      setExportData(data.invoice)
+      const { blob, filename } = await invoiceApi.exportPdf(invoiceId)
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      link.click()
+      URL.revokeObjectURL(url)
     } catch (err) {
       setNotice({ tone: 'error', message: err.message })
     }
@@ -380,7 +398,6 @@ export function InvoiceDetailPage({ invoiceId, onNavigate }) {
 
   return (
     <section>
-      <Modal open={Boolean(exportData)} title="Export data" message={exportData ? JSON.stringify(exportData, null, 2) : ''} confirmText="Close" onConfirm={() => setExportData(null)} onClose={() => setExportData(null)} />
       <PageHeader title={invoice?.invoiceNumber ?? 'Invoice'} description="Invoice detail with client and line items." action={<div className="flex gap-2"><Button variant="secondary" onClick={() => onNavigate('invoices')}><ArrowLeft size={16} />Back</Button><Button variant="secondary" onClick={() => onNavigate('invoice-edit', { invoiceId })}><Edit3 size={16} />Edit</Button><Button onClick={loadExport}><FileDown size={16} />Export</Button></div>} />
       <div className="p-5"><Notice tone={notice.tone}>{notice.message}</Notice></div>
       {!loading && invoice ? (

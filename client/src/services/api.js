@@ -111,4 +111,23 @@ export const invoiceApi = {
   }),
   delete: (id) => apiRequest(`/api/invoices/${id}`, { method: 'DELETE' }),
   export: (id) => apiRequest(`/api/export-invoice/${id}`),
+  exportPdf: async (id) => {
+    const response = await fetch(`${API_URL}/api/export-invoice/${id}/pdf`, {
+      credentials: 'include',
+    })
+
+    if (!response.ok) {
+      const contentType = response.headers.get('content-type') ?? ''
+      const data = contentType.includes('application/json') ? await response.json() : null
+      throw new Error(data?.message ?? data?.error ?? 'Failed to export PDF')
+    }
+
+    const disposition = response.headers.get('content-disposition') ?? ''
+    const filename = disposition.match(/filename="(.+)"/)?.[1] ?? `invoice-${id}.pdf`
+
+    return {
+      blob: await response.blob(),
+      filename,
+    }
+  },
 }

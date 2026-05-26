@@ -34,3 +34,36 @@ export const exportInvoiceController = async (req: Request, res: Response) => {
         return handleControllererror(res, error)
     }
 }
+
+export const exportInvoicePdfController = async (req: Request, res: Response) => {
+    try {
+        const invoiceId = Number(req.params.invoiceId)
+
+        if (!Number.isInteger(invoiceId) || invoiceId <= 0) {
+            return res.status(400).json({
+                message: 'Invoice id is required'
+            })
+        }
+
+        const session = req.authSession!
+        const { organizationId } = session
+
+        if (organizationId === null || typeof organizationId !== 'number') {
+            return res.status(400).json({
+                message: 'Organization id is required'
+            })
+        }
+
+        const pdf = await ExportServices.generateInvoicePdf({
+            invoiceId,
+            organizationId
+        })
+
+        res.setHeader('Content-Type', 'application/pdf')
+        res.setHeader('Content-Disposition', `attachment; filename="${pdf.filename}"`)
+
+        return res.status(200).send(pdf.buffer)
+    } catch (error) {
+        return handleControllererror(res, error)
+    }
+}
