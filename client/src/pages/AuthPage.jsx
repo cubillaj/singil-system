@@ -6,6 +6,8 @@ import { Button } from '../components/Button'
 import { Field, inputClassName } from '../components/Form'
 import { Notice } from '../components/Notice'
 import logoImage from '../assets/singil-favicon-green.svg'
+import logoImageLogin from '../assets/singil_login_wave.svg'
+import registerImage from '../assets/singil_register_workspace.svg'
 const initialLogin = { email: '', password: '' }
 const initialRegister = {
   name: '',
@@ -215,6 +217,8 @@ function SubscriptionPage() {
 
 function AuthFormPage({ mode, onLogin, onRegister }) {
   const navigate = useNavigate()
+  const authImage = mode === 'login' ? logoImageLogin : registerImage
+  const authImageAlt = mode === 'login' ? 'Person signing in to Singil' : 'Team creating a Singil workspace'
   const [loginForm, setLoginForm] = useState(initialLogin)
   const [registerForm, setRegisterForm] = useState(initialRegister)
   const [error, setError] = useState('')
@@ -250,13 +254,22 @@ function AuthFormPage({ mode, onLogin, onRegister }) {
   }
 
   return (
-    <section className="min-h-[calc(100vh-4rem)] bg-panel px-4 py-16 sm:px-6">
+    <section className="min-h-[calc(100vh-4rem)] bg-panel px-4 py-12 sm:px-6 lg:py-16">
       <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[minmax(0,1fr)_440px] lg:items-start">
-        <div className="max-w-2xl">
-          <h1 className="text-3xl font-semibold sm:text-4xl">{mode === 'login' ? 'Sign in to Singil' : 'Create your Singil workspace'}</h1>
-          <p className="mt-4 text-base leading-7 text-muted">
-            Owners can create a workspace. Invited admins and members can join with the exact invitation code and role assigned to them.
-          </p>
+        <div className="grid gap-6">
+          <div className="max-w-2xl">
+            <h1 className="text-3xl font-semibold sm:text-4xl">{mode === 'login' ? 'Sign in to Singil' : 'Create your Singil workspace'}</h1>
+            <p className="mt-4 text-base leading-7 text-muted">
+              Owners can create a workspace. Invited admins and members can join with the exact invitation code and role assigned to them.
+            </p>
+          </div>
+          <div className="hidden overflow-hidden rounded-md border border-line bg-surface md:block">
+            <img
+              src={authImage}
+              alt={authImageAlt}
+              className="h-[22rem] w-full object-cover object-center"
+            />
+          </div>
         </div>
 
         <div className="rounded-md border border-line bg-panel p-5 shadow-sm">
