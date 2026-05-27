@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "invoices_recurring_invoice_issue_date_unique" ON "invoices" USING btree ("recurring_invoice_id","issue_date");

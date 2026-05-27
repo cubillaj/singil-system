@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { pgEnum, varchar, pgTable, serial, text, timestamp, uuid, boolean, integer, numeric} from "drizzle-orm/pg-core";
+import { pgEnum, varchar, pgTable, serial, text, timestamp, uuid, boolean, integer, numeric, uniqueIndex} from "drizzle-orm/pg-core";
 
 export const planEnum = pgEnum('plan',['free', 'pro', 'business'])
 
@@ -197,6 +197,11 @@ export const invoices = pgTable("invoices", {
  
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => {
+  return {
+    recurringInvoiceIssueDateUnique: uniqueIndex("invoices_recurring_invoice_issue_date_unique")
+      .on(table.recurringInvoiceId, table.issueDate),
+  };
 });
 
 // invoice items 

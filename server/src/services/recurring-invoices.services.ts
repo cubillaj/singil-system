@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, lte } from "drizzle-orm";
 import { db } from "../db/db.js";
 import { clients, invoiceItems, invoices, recurringInvoiceItems, recurringInvoices } from "../db/schema.js";
 import { AppError } from "../utils/appError.js";
@@ -286,6 +286,43 @@ export const deleteRecurringInvoice = async (ids: unknown) => {
   return deletedRecurringInvoice;
 };
 
+export const generateDueRecurringInvoices = async () => {
+  const dueRecurringInvoices = await db.query.recurringInvoices.findMany({
+    where: and(
+      eq(recurringInvoices.isActive, true),
+      eq(recurringInvoices.autoSend, true),
+      lte(recurringInvoices.nextIssueDate, new Date())
+    ),
+    columns: {
+      id: true,
+      organizationId: true,
+      createdById: true
+    }
+  })
+
+  const results = []
+
+  for ( const recurringInvoice of dueRecurringInvoices) {
+    try {
+      const invoice = await generateInvoiceFromRecurring({
+        recurringInvoiceId: recurringInvoice.id,
+        organizationId: recurringInvoice.organizationId,
+        createdById: recurringInvoice.createdById
+      })
+
+      results.push(invoice)
+    } catch (error) {
+      if (error instanceof AppError && error.statusCode === 409) {
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  return results
+}
+
 export const generateInvoiceFromRecurring = async (ids: unknown) => {
   const parsed = GenerateRecurringInvoiceSchema.safeParse(ids);
 
@@ -347,6 +384,20 @@ export const generateInvoiceFromRecurring = async (ids: unknown) => {
   const invoiceNumber = `INV-R${recurringInvoice.id}-${Date.now()}`;
 
   const invoice = await db.transaction(async (tx) => {
+    const [existingInvoice] = await tx.select({
+      id: invoices.id,
+    })
+      .from(invoices)
+      .where(and(
+        eq(invoices.organizationId, organizationId),
+        eq(invoices.recurringInvoiceId, recurringInvoice.id),
+        eq(invoices.issueDate, issueDate),
+      ));
+
+    if (existingInvoice) {
+      throw new AppError("Invoice was already generated for this recurring issue date.", 409);
+    }
+
     const [createdInvoice] = await tx.insert(invoices)
       .values({
         organizationId,

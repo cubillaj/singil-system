@@ -16,6 +16,7 @@ import invoicesRoutes from './src/routes/invoice.routes.js'
 import exportRoutes from './src/routes/export.routes.js'
 import usersRoutes from './src/routes/users.routes.js'
 import recurringInvoicesRoutes from './src/routes/recurring-invoices.routes.js'
+import { scheduleRecurringInvoiceJob } from "./src/queues/recurring-invoice.queue.js";
 const app = express();
 
 const devOrigins = ['http://localhost:5173', 'http://localhost:5174']
@@ -30,6 +31,7 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(cookieParser())
+app.set('trust proxy', 1)
 app.use(sessionMiddleware)
 app.use("/api/auth", authRoutes)
 app.use("/api/users", usersRoutes)
@@ -42,6 +44,7 @@ app.use("/api/recurring-invoices", recurringInvoicesRoutes)
 app.use("/api/export-invoice", exportRoutes)
 
 app.use(errorMiddleware)
+scheduleRecurringInvoiceJob().catch(console.error);
 
 const PORT = Number(process.env.PORT) || 5000;
 app.listen(PORT, () => {
