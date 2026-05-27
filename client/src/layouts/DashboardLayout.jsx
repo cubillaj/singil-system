@@ -82,9 +82,13 @@ export function DashboardLayout({ user, activePage, onNavigate, onLogout, childr
               <p className="text-sm font-semibold text-ink">{user?.name} {user?.lastName}</p>
               <p className="text-xs capitalize text-muted">{roleLabel(user?.role)}</p>
             </div>
-            <div className="grid size-9 place-items-center rounded-full bg-surface text-sm font-semibold ring-1 ring-line">
-              {getInitials(user)}
-            </div>
+            {user?.avatarUrl ? (
+              <img src={user.avatarUrl} alt="" className="size-9 rounded-full object-cover ring-1 ring-line" />
+            ) : (
+              <div className="grid size-9 place-items-center rounded-full bg-surface text-sm font-semibold ring-1 ring-line">
+                {getInitials(user)}
+              </div>
+            )}
             <Button variant="ghost" onClick={onLogout} aria-label="Logout" title="Logout" className="w-10 px-0">
               <LogOut size={18} />
             </Button>

@@ -184,6 +184,7 @@ export const me = async (req: Request, res: Response, next: NextFunction) => {
         name: true,
         lastName: true,
         email: true,
+        avatarUrl: true,
         role: true
       },
       with: {

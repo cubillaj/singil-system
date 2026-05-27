@@ -1,6 +1,7 @@
 import * as UsersServices from '../services/user.services.js'
 import { Request, Response } from 'express'
 import { handleControllererror } from '../utils/handleController.js'
+import { uploadImageToCloudinary } from '../middleware/upload.middleware.js'
 export const changePasswordController = async (req: Request, res: Response) => {
     try {
          const session = req.authSession!
@@ -33,7 +34,20 @@ export const updateUserInfoController = async (req: Request, res: Response) => {
 
         const { userId} = session
 
-        const user = await UsersServices.updateUser(userId, req.body)
+        let avatarUrl: string | undefined
+
+        if(req.file) {
+            const uploaded = await uploadImageToCloudinary(req.file, {
+                folder: 'singil-system/userAvatar'
+            })
+
+            avatarUrl = uploaded.secure_url
+        }
+
+        const user = await UsersServices.updateUser(userId, {
+            avatarUrl,
+            ...req.body
+        })
 
         return res.status(200).json({
             message: 'Successfully updated your profile.',

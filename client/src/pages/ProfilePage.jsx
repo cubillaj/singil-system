@@ -1,4 +1,4 @@
-import { ArrowLeft, KeyRound, Pencil, Save } from 'lucide-react'
+import { ArrowLeft, ImageUp, KeyRound, Pencil, Save } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Button } from '../components/Button'
 import { Field, inputClassName } from '../components/Form'
@@ -112,7 +112,6 @@ export function ProfilePage({ onNavigate }) {
               <InfoRow label="First name" value={profile.name} />
               <InfoRow label="Last name" value={profile.lastName} />
               <InfoRow label="Email" value={profile.email} />
-              <InfoRow label="Avatar URL" value={profile.avatarUrl} />
             </>
           )}
         </div>
@@ -123,15 +122,43 @@ export function ProfilePage({ onNavigate }) {
 
 export function ProfileEditPage({ onNavigate, onUpdated }) {
   const { profile, setProfile, notice, setNotice, loading } = useProfileInfo()
+  const [avatarFile, setAvatarFile] = useState(null)
+  const [avatarPreview, setAvatarPreview] = useState('')
   const [modal, setModal] = useState({ open: false })
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (!avatarFile) {
+      setAvatarPreview('')
+      return undefined
+    }
+
+    const previewUrl = URL.createObjectURL(avatarFile)
+    setAvatarPreview(previewUrl)
+
+    return () => URL.revokeObjectURL(previewUrl)
+  }, [avatarFile])
 
   const submitProfile = async (event) => {
     event.preventDefault()
     setSaving(true)
     setNotice({ tone: 'error', message: '' })
     try {
-      await userApi.update(cleanPayload(profile))
+      const payload = cleanPayload({
+        name: profile.name,
+        lastName: profile.lastName,
+        email: profile.email,
+      })
+
+      if (avatarFile) {
+        const formData = new FormData()
+        Object.entries(payload).forEach(([key, value]) => formData.append(key, value))
+        formData.append('avatarUrl', avatarFile)
+        await userApi.update(formData)
+      } else {
+        await userApi.update(payload)
+      }
+
       await onUpdated?.()
       setModal({
         open: true,
@@ -174,9 +201,30 @@ export function ProfileEditPage({ onNavigate, onUpdated }) {
         <Field label="Email">
           <input className={inputClassName()} type="email" value={profile.email} onChange={(event) => setProfile({ ...profile, email: event.target.value })} required disabled={loading} />
         </Field>
-        <Field label="Avatar URL">
-          <input className={inputClassName()} value={profile.avatarUrl} onChange={(event) => setProfile({ ...profile, avatarUrl: event.target.value })} disabled={loading} />
-        </Field>
+        <div className="grid gap-3">
+          <p className="text-sm font-medium text-ink">Avatar</p>
+          <div className="flex items-center gap-4">
+            {avatarPreview || profile.avatarUrl ? (
+              <img src={avatarPreview || profile.avatarUrl} alt="" className="size-16 rounded-full object-cover ring-1 ring-line" />
+            ) : (
+              <div className="grid size-16 place-items-center rounded-full bg-surface text-lg font-semibold ring-1 ring-line">
+                {profile.name?.[0] ?? 'U'}
+              </div>
+            )}
+            <label className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-md border border-line bg-white px-3 text-sm font-semibold text-ink transition hover:bg-surface">
+              <ImageUp size={17} />
+              Upload image
+              <input
+                className="sr-only"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(event) => setAvatarFile(event.target.files?.[0] ?? null)}
+                disabled={loading}
+              />
+            </label>
+          </div>
+          <p className="text-xs text-muted">JPG, PNG, or WEBP. Max size is 5MB.</p>
+        </div>
         <Button type="submit" disabled={saving || loading} className="w-fit">
           <Save size={17} />
           {saving ? 'Saving...' : 'Save profile'}

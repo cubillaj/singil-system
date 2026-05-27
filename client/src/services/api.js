@@ -66,7 +66,7 @@ export const userApi = {
   info: () => apiRequest('/api/users/user-info'),
   update: (payload) => apiRequest('/api/users', {
     method: 'PUT',
-    body: JSON.stringify(payload),
+    body: payload instanceof FormData ? payload : JSON.stringify(payload),
   }),
   changePassword: (payload) => apiRequest('/api/users/password', {
     method: 'PUT',
