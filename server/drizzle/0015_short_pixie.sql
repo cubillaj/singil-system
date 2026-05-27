@@ -1,0 +1,2 @@
+ALTER TABLE "recurring_invoices" ADD COLUMN "created_by_id" integer;--> statement-breakpoint
+ALTER TABLE "recurring_invoices" ADD CONSTRAINT "recurring_invoices_created_by_id_users_id_fk" FOREIGN KEY ("created_by_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;

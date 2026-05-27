@@ -192,7 +192,8 @@ export const invoices = pgTable("invoices", {
   pdfUrl: text("pdf_url"),
  
   // Recurring reference
-  recurringInvoiceId: integer("recurring_invoice_id"),
+  recurringInvoiceId: integer("recurring_invoice_id")
+    .references(() => recurringInvoices.id, { onDelete: "set null" }),
  
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -248,7 +249,8 @@ export const recurringInvoices = pgTable("recurring_invoices", {
   clientId: integer("client_id")
     .notNull()
     .references(() => clients.id, { onDelete: "restrict" }),
- 
+  createdById: integer('created_by_id')
+    .references(() => users.id, { onDelete: "cascade"}),
   interval: recurringIntervalEnum("interval").notNull(),
   nextIssueDate: timestamp("next_issue_date").notNull(),
   endDate: timestamp("end_date"),           // null = runs forever
@@ -260,7 +262,7 @@ export const recurringInvoices = pgTable("recurring_invoices", {
   notes: text("notes"),
   footer: text("footer"),
   dueDaysAfterIssue: integer("due_days_after_issue").default(30).notNull(),
- 
+
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

@@ -1,4 +1,4 @@
-import { BriefcaseBusiness, Building2, CircleUser, FileText, LogOut, MailPlus, Package, Settings, Users } from 'lucide-react'
+import { BriefcaseBusiness, Building2, CircleUser, FileText, LogOut, MailPlus, Package, Repeat, Settings, Users } from 'lucide-react'
 import { Button } from '../components/Button'
 import { getInitials, roleLabel } from '../utils/format'
 
@@ -7,6 +7,7 @@ const navItems = [
   { id: 'clients', label: 'Clients', icon: BriefcaseBusiness, roles: ['admin', 'member', 'owner'] },
   { id: 'products', label: 'Products', icon: Package, roles: ['admin', 'member', 'owner'] },
   { id: 'invoices', label: 'Invoices', icon: FileText, roles: ['admin', 'member', 'owner'] },
+  { id: 'recurring', label: 'Recurring', icon: Repeat, roles: ['admin', 'member', 'owner'] },
   { id: 'invitations', label: 'Invitations', icon: MailPlus, roles: ['system_admin', 'admin', 'owner'] },
   { id: 'organization', label: 'Organization', icon: Settings, roles: ['admin', 'owner'] },
   { id: 'profile', label: 'Profile', icon: CircleUser, roles: ['system_admin', 'admin', 'member', 'owner'] },
@@ -16,6 +17,7 @@ function rootPage(page) {
   if (page.startsWith('client-')) return 'clients'
   if (page.startsWith('product-')) return 'products'
   if (page.startsWith('invoice-')) return 'invoices'
+  if (page.startsWith('recurring-')) return 'recurring'
   if (page.startsWith('member-')) return 'members'
   if (page.startsWith('invitation-')) return 'invitations'
   return page

@@ -15,6 +15,7 @@ import productRoutes from './src/routes/products.routes.js'
 import invoicesRoutes from './src/routes/invoice.routes.js'
 import exportRoutes from './src/routes/export.routes.js'
 import usersRoutes from './src/routes/users.routes.js'
+import recurringInvoicesRoutes from './src/routes/recurring-invoices.routes.js'
 const app = express();
 
 const devOrigins = ['http://localhost:5173', 'http://localhost:5174']
@@ -37,6 +38,7 @@ app.use("/api/organization", organizationRoutes)
 app.use("/api/clients", clientsRoutes)
 app.use("/api/products", productRoutes)
 app.use("/api/invoices", invoicesRoutes)
+app.use("/api/recurring-invoices", recurringInvoicesRoutes)
 app.use("/api/export-invoice", exportRoutes)
 
 app.use(errorMiddleware)
