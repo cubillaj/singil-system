@@ -1,11 +1,11 @@
-import { CheckCircle2, CreditCard, FileText, ShieldCheck, Users } from 'lucide-react'
+import { CheckCircle2, FileText, ShieldCheck, Users } from 'lucide-react'
 import { useState } from 'react'
 import { Link, Navigate, NavLink, Route, Routes, useNavigate } from 'react-router-dom'
-import heroImg from '../assets/hero.png'
+import heroImg from '../assets/singil-hero-illustration.svg'
 import { Button } from '../components/Button'
 import { Field, inputClassName } from '../components/Form'
 import { Notice } from '../components/Notice'
-
+import logoImage from '../assets/singil-favicon-green.svg'
 const initialLogin = { email: '', password: '' }
 const initialRegister = {
   name: '',
@@ -36,7 +36,7 @@ function PublicNav() {
     <header className="sticky top-0 z-20 border-b border-line bg-panel/95 backdrop-blur">
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
         <Link to="/" className="flex items-center gap-3">
-          <div className="grid size-10 place-items-center rounded-md bg-accent text-sm font-bold text-white">S</div>
+          <img src={logoImage} width={36} height={36} />
           <div>
             <p className="text-sm font-semibold">Singil</p>
             <p className="text-xs text-muted">Invoice operations</p>
@@ -145,13 +145,8 @@ function SubscriptionSection({ compact = false }) {
 function HomePage() {
   return (
     <>
-      <section className="relative isolate flex min-h-[calc(100vh-4rem)] items-center overflow-hidden border-b border-line bg-[#edf5f2] px-4 py-16 sm:px-6">
-        <img
-          src={heroImg}
-          alt=""
-          className="pointer-events-none absolute right-[-3rem] top-20 z-[-1] h-[24rem] w-[24rem] object-contain opacity-20 sm:right-8 sm:h-[32rem] sm:w-[32rem] lg:opacity-30"
-        />
-        <div className="mx-auto grid w-full max-w-7xl gap-10 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-center">
+      <section className="relative isolate flex min-h-[calc(100vh-4rem)] items-center overflow-hidden border-b border-line bg-[#edf5f2] px-4 py-14 sm:px-6 lg:py-12">
+        <div className="mx-auto grid w-full max-w-7xl gap-10 lg:grid-cols-[minmax(0,0.92fr)_minmax(420px,1fr)] lg:items-center">
           <div className="max-w-3xl">
             <p className="mb-4 inline-flex rounded-md border border-line bg-panel px-3 py-1 text-sm font-medium text-accent">
               Billing workspace for Philippine teams
@@ -168,24 +163,12 @@ function HomePage() {
             </div>
           </div>
 
-          <div className="grid gap-3 rounded-md border border-line bg-panel/90 p-4 shadow-sm">
-            <div className="flex items-center justify-between border-b border-line pb-3">
-              <div>
-                <p className="text-sm font-semibold">Workspace snapshot</p>
-                <p className="text-xs text-muted">Today</p>
-              </div>
-              <CreditCard className="text-accent" size={20} />
-            </div>
-            {[
-              ['Clients ready', '128'],
-              ['Products active', '42'],
-              ['Open invitations', '7'],
-            ].map(([label, value]) => (
-              <div key={label} className="flex items-center justify-between rounded-md bg-surface px-3 py-3">
-                <span className="text-sm text-muted">{label}</span>
-                <span className="text-lg font-semibold">{value}</span>
-              </div>
-            ))}
+          <div className="relative min-h-[18rem] overflow-hidden rounded-md border border-line bg-panel shadow-sm sm:min-h-[24rem] lg:min-h-[30rem]">
+            <img
+              src={heroImg}
+              alt="Person working on invoices and billing"
+              className="absolute inset-0 h-full w-full object-cover object-center"
+            />
           </div>
         </div>
       </section>

@@ -1,7 +1,7 @@
 import { BriefcaseBusiness, Building2, CircleUser, FileText, LogOut, MailPlus, Package, Repeat, Settings, Users } from 'lucide-react'
 import { Button } from '../components/Button'
 import { getInitials, roleLabel } from '../utils/format'
-
+import logoImage from '../assets/singil-favicon-green.svg'
 const navItems = [
   { id: 'members', label: 'Members', icon: Users, roles: ['admin', 'owner'] },
   { id: 'clients', label: 'Clients', icon: BriefcaseBusiness, roles: ['admin', 'member', 'owner'] },
@@ -31,7 +31,7 @@ export function DashboardLayout({ user, activePage, onNavigate, onLogout, childr
     <div className="min-h-screen bg-surface text-ink">
       <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-line bg-panel lg:block">
         <div className="flex h-16 items-center gap-2 border-b border-line px-5">
-          <div className="grid size-9 place-items-center rounded-md bg-accent text-sm font-bold text-white">S</div>
+          <img src={logoImage} width={36} height={36} />
           <div>
             <p className="text-sm font-semibold">Singil</p>
             <p className="text-xs text-muted">Billing workspace</p>
