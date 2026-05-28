@@ -21,8 +21,6 @@ const app = express();
 
 const devOrigins = ['http://localhost:5173', 'http://localhost:5174']
 
-await connectRedis();
-
 app.use(helmet())
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'))
 app.use(cors({
@@ -44,9 +42,17 @@ app.use("/api/recurring-invoices", recurringInvoicesRoutes)
 app.use("/api/export-invoice", exportRoutes)
 
 app.use(errorMiddleware)
-scheduleRecurringInvoiceJob().catch(console.error);
 
 const PORT = Number(process.env.PORT) || 5000;
 app.listen(PORT, () => {
   console.log(`Server listening on http://localhost:${PORT}`);
 });
+
+connectRedis()
+  .then(() => {
+    console.log('Redis connected');
+    return scheduleRecurringInvoiceJob();
+  })
+  .catch((error) => {
+    console.error('Redis startup failed:', error);
+  });
