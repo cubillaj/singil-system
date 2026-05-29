@@ -10,6 +10,7 @@ import { OrganizationPage } from './pages/OrganizationPage'
 import { ChangePasswordPage, ProfileEditPage, ProfilePage } from './pages/ProfilePage'
 import { ProductFormPage, ProductsPage } from './pages/ProductsPage'
 import { RecurringInvoiceDetailPage, RecurringInvoiceFormPage, RecurringInvoicesPage } from './pages/RecurringInvoicesPage'
+import { SubscriptionPage } from './pages/SubscriptionPage'
 
 function defaultPageForRole(role) {
   if (role === 'system_admin') return '/dashboard/invitations'
@@ -39,6 +40,7 @@ function canAccessPage(role, page) {
     invitations: ['system_admin', 'admin', 'owner'],
     'invitation-new': ['system_admin', 'admin', 'owner'],
     organization: ['admin', 'owner'],
+    subscription: ['owner'],
     profile: ['system_admin', 'admin', 'member', 'owner'],
     'profile-edit': ['system_admin', 'admin', 'member', 'owner'],
     'profile-password': ['system_admin', 'admin', 'member', 'owner'],
@@ -69,6 +71,7 @@ function pageToPath(page, params = {}) {
     invitations: '/dashboard/invitations',
     'invitation-new': '/dashboard/invitations/new',
     organization: '/dashboard/organization',
+    subscription: '/dashboard/subscription',
     profile: '/dashboard/profile',
     'profile-edit': '/dashboard/profile/edit',
     'profile-password': '/dashboard/profile/password',
@@ -98,6 +101,7 @@ function activePageFromPath(pathname) {
   if (pathname === '/dashboard/invitations/new') return 'invitation-new'
   if (pathname === '/dashboard/invitations') return 'invitations'
   if (pathname === '/dashboard/organization') return 'organization'
+  if (pathname === '/dashboard/subscription') return 'subscription'
   if (pathname === '/dashboard/profile/edit') return 'profile-edit'
   if (pathname === '/dashboard/profile/password') return 'profile-password'
   if (pathname === '/dashboard/profile') return 'profile'
@@ -211,6 +215,7 @@ function App() {
         <Route path="/dashboard/invitations" element={<ProtectedPage user={auth.user} page="invitations"><InvitationsPage user={auth.user} onNavigate={navigateToPage} /></ProtectedPage>} />
         <Route path="/dashboard/invitations/new" element={<ProtectedPage user={auth.user} page="invitation-new"><InvitationCreatePage user={auth.user} onNavigate={navigateToPage} /></ProtectedPage>} />
         <Route path="/dashboard/organization" element={<ProtectedPage user={auth.user} page="organization"><OrganizationPage user={auth.user} onUpdated={auth.refresh} /></ProtectedPage>} />
+        <Route path="/dashboard/subscription" element={<ProtectedPage user={auth.user} page="subscription"><SubscriptionPage user={auth.user} onUpdated={auth.refresh} /></ProtectedPage>} />
         <Route path="/dashboard/profile" element={<ProtectedPage user={auth.user} page="profile"><ProfilePage onNavigate={navigateToPage} /></ProtectedPage>} />
         <Route path="/dashboard/profile/edit" element={<ProtectedPage user={auth.user} page="profile-edit"><ProfileEditPage onNavigate={navigateToPage} onUpdated={auth.refresh} /></ProtectedPage>} />
         <Route path="/dashboard/profile/password" element={<ProtectedPage user={auth.user} page="profile-password"><ChangePasswordPage onNavigate={navigateToPage} /></ProtectedPage>} />

@@ -18,6 +18,7 @@ import usersRoutes from './src/routes/users.routes.js'
 import recurringInvoicesRoutes from './src/routes/recurring-invoices.routes.js'
 import { scheduleRecurringInvoiceJob } from "./src/queues/recurring-invoice.queue.js";
 import subscriptionRoutes from './src/routes/subscription.routes.js'
+import webhookRoutes from './src/routes/webhook.routes.js'
 
 const app = express();
 
@@ -29,6 +30,7 @@ app.use(cors({
   origin: process.env.NODE_ENV === 'production' ? process.env.CLIENT_URL : devOrigins,
   credentials: true
 }));
+app.use("/api/webhooks", webhookRoutes)
 app.use(express.json());
 app.use(cookieParser())
 app.set('trust proxy', 1)

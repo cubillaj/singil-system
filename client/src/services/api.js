@@ -162,3 +162,10 @@ export const recurringInvoiceApi = {
   delete: (id) => apiRequest(`/api/recurring-invoices/${id}`, { method: 'DELETE' }),
   generate: (id) => apiRequest(`/api/recurring-invoices/${id}/generate`, { method: 'POST' }),
 }
+
+export const subscriptionApi = {
+  checkout: (payload) => apiRequest('/api/subscription', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }),
+}

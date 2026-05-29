@@ -229,7 +229,19 @@ export const me = async (req: Request, res: Response, next: NextFunction) => {
           columns: {
             name: true,
             slug: true,
-            logoUrl: true
+            logoUrl: true,
+            plan: true,
+          },
+          with: {
+            subscription: {
+              columns: {
+                plan: true,
+                status: true,
+                currentPeriodStart: true,
+                currentPeriodEnd: true,
+                expiresAt: true,
+              }
+            }
           }
         }
       }

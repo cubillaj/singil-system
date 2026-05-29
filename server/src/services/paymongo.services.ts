@@ -6,7 +6,7 @@ import { SubscriptionPaymentSchema } from "../validation/subscription.validation
 import { PAYMONGO_API, payMongoAuthHeaders } from "../utils/paymongo.utils.js";
 import { getFirstZodMessage } from "../utils/zodErrors.js";
 
-const subscriptionPrices = {
+export const subscriptionPrices = {
   pro: "200.00",
   business: "500.00",
 } as const;
