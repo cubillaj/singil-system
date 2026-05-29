@@ -1,0 +1,1 @@
+ALTER TABLE "subscription_payments" ADD COLUMN "updated_at" timestamp DEFAULT now() NOT NULL;

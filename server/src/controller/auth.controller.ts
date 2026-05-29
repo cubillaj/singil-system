@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import { NextFunction, Request, Response } from "express";
 import { eq } from "drizzle-orm";
 import { db } from "../db/db.js";
-import { organizationInvites, organizations, users, type User } from "../db/schema.js";
+import { organizationInvites, organizations, organizationSubscriptions, users, type User } from "../db/schema.js";
 import { AppError } from "../utils/appError.js";
 import { createAuthSession, destroyAuthSession } from "../services/authSession.js";
 import { LoginSchema, RegisterSchema } from "../validation/auth.validation.js";
@@ -15,6 +15,12 @@ function sanitizeUser(user: User) {
 
   return safeUser;
 }
+
+const createDefaultSubscription = {
+  plan: "free",
+  status: "active",
+  provider: "manual",
+} as const;
 
 // @desc    Register a new user and create an organization for owners, or join by invitation for members
 // @route   POST /api/auth/register
@@ -41,6 +47,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       let organizationId: number;
       let userRole = parsed.data.role;
       let invitationId: number | null = null;
+      let subscriptionId: number | null
 
       if (parsed.data.role === "owner") {
         if (!parsed.data.organizationName) {
@@ -55,6 +62,14 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
         }).returning({ id: organizations.id });
 
         organizationId = organization.id;
+
+        const [subscription] = await tx.insert(organizationSubscriptions)
+                .values({
+                  organizationId,
+                  ...createDefaultSubscription
+                })
+
+        subscriptionId = subscription.id
       } else {
         if (!parsed.data.code) {
           throw new AppError("Invitation code is required", 400);
@@ -143,6 +158,17 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
 
     const user = await db.query.users.findFirst({
       where: eq(users.email, parsed.data.email),
+      with: {
+        organization: {
+          with: {
+            subscription: {
+              columns: {
+                id: true
+              }
+            }
+          }
+        }
+      }
     });
 
     if (!user) {
@@ -158,8 +184,19 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     const session = await createAuthSession(req, {
       userId: user.id,
       organizationId: user.organizationId,
-      role: user.role,
+      role: user.role
     });
+
+    if (user.organizationId !== null) {
+      await db.insert(organizationSubscriptions)
+        .values({
+          organizationId: user.organizationId,
+          ...createDefaultSubscription,
+        })
+        .onConflictDoNothing({
+          target: organizationSubscriptions.organizationId,
+        });
+    }
 
     return res.status(200).json({
       message: "Logged in",

@@ -52,11 +52,69 @@ export const inviteRoleEnum = pgEnum('invite_role', [
   'member'
 ])
 
+export const subscriptionStatusEnum = pgEnum('subscription_status',[
+  'active',
+  'past_due',
+  'cancelled',
+  'expired'
+])
+
 const timestamps = {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull()
 } 
 // organization (multi-tenacy)
+
+export const organizationSubscriptions = pgTable('organization_Subscriptions',{
+  id: serial('id').primaryKey(),
+
+  organizationId: integer('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade'} ),
+
+  plan: planEnum("plan").default('free').notNull(),
+  status: subscriptionStatusEnum("status").default("active").notNull(),
+
+  startsAt: timestamp("starts_at").defaultNow().notNull(),
+  currentPeriodStart: timestamp("current_period_start").defaultNow().notNull(),
+  currentPeriodEnd: timestamp("current_period_end"),
+
+  cancelledAt: timestamp("cancelled_at"),
+  expiresAt: timestamp("expires_at"),
+
+  provider: varchar("provider", { length: 50 }), // paymongo, stripe, manual
+  providerCustomerId: varchar("provider_customer_id", { length: 255 }),
+  providerSubscriptionId: varchar("provider_subscription_id", { length: 255 }),
+  ...timestamps
+}, (table) => {
+  return {
+    organizationSubscriptionOrganizationUnique: uniqueIndex("organization_subscriptions_organization_id_unique")
+      .on(table.organizationId),
+  };
+})
+
+
+export const subscriptionPayments = pgTable("subscription_payments", {
+  id: serial("id").primaryKey(),
+
+  organizationId: integer("organization_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+
+  subscriptionId: integer("subscription_id")
+    .references(() => organizationSubscriptions.id, { onDelete: "set null" }),
+
+  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+  currency: currencyEnum("currency").default("PH").notNull(),
+
+  provider: varchar("provider", { length: 50 }).notNull(),
+  checkoutSessionId: varchar("checkout_session_id", { length: 255 }).unique(),
+  providerPaymentId: varchar("provider_payment_id", { length: 255 }),
+  status: varchar("status", { length: 50 }).notNull(),
+
+  paidAt: timestamp("paid_at"),
+  ...timestamps
+});
 
 export const organizations = pgTable('organizations', {
   id: serial('id').primaryKey(),
@@ -292,13 +350,37 @@ export const recurringInvoiceItems = pgTable("recurring_invoice_items", {
 
 // RELATIONS
 
-export const organizationsRelations = relations(organizations, ({ many }) => ({
+export const organizationSubscriptionRelations = relations(organizationSubscriptions, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [organizationSubscriptions.organizationId],
+    references: [organizations.id]
+  }),
+  payments: many(subscriptionPayments)
+}))
+
+export const subscriptionPaymentsRelations = relations(subscriptionPayments, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [subscriptionPayments.organizationId],
+    references: [organizations.id],
+  }),
+  subscription: one(organizationSubscriptions, {
+    fields: [subscriptionPayments.subscriptionId],
+    references: [organizationSubscriptions.id],
+  }),
+}))
+
+export const organizationsRelations = relations(organizations, ({ one, many }) => ({
+  subscription: one(organizationSubscriptions, {
+    fields: [organizations.id],
+    references: [organizationSubscriptions.organizationId],
+  }),
   users: many(users),
   invites: many(organizationInvites),
   clients: many(clients),
   products: many(products),
   invoices: many(invoices),
   payments: many(payments),
+  subscriptionPayments: many(subscriptionPayments),
   recurringInvoices: many(recurringInvoices)
 }))
 

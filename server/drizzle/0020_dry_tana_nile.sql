@@ -1,0 +1,2 @@
+ALTER TABLE "subscription_payments" ADD COLUMN "checkout_session_id" varchar(255);--> statement-breakpoint
+ALTER TABLE "subscription_payments" ADD CONSTRAINT "subscription_payments_checkout_session_id_unique" UNIQUE("checkout_session_id");
