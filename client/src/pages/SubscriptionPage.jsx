@@ -141,10 +141,6 @@ export function SubscriptionPage({ user, onUpdated }) {
             )
           })}
         </div>
-
-        <p className="max-w-3xl text-sm leading-6 text-muted">
-          Paid plan changes finish after PayMongo confirms the payment through your webhook. After checkout, return to the workspace and refresh if the new plan is still processing.
-        </p>
       </div>
     </section>
   )
