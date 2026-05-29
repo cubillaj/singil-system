@@ -30,8 +30,18 @@ const plans = [
   },
 ]
 
-function planLabel(plan) {
-  return plan ? plan.charAt(0).toUpperCase() + plan.slice(1) : 'Free'
+const planRank = {
+  free: 0,
+  pro: 1,
+  business: 2,
+}
+
+function planButtonLabel({ isCurrent, isFree, isDowngrade, isLoading, planName }) {
+  if (isCurrent) return 'Current plan'
+  if (isDowngrade) return 'Downgrade unavailable'
+  if (isFree) return 'Included'
+  if (isLoading) return 'Opening checkout...'
+  return `Upgrade to ${planName}`
 }
 
 export function SubscriptionPage({ user, onUpdated }) {
@@ -48,7 +58,9 @@ export function SubscriptionPage({ user, onUpdated }) {
   )
 
   const startCheckout = async (plan) => {
-    if (plan.id === 'free' || plan.id === currentPlan) return
+    const isDowngrade = planRank[plan.id] < planRank[currentPlan]
+
+    if (plan.id === 'free' || plan.id === currentPlan || isDowngrade) return
 
     setError('')
     setLoadingPlan(plan.id)
@@ -106,6 +118,7 @@ export function SubscriptionPage({ user, onUpdated }) {
           {plans.map((plan) => {
             const isCurrent = plan.id === currentPlan
             const isFree = plan.id === 'free'
+            const isDowngrade = planRank[plan.id] < planRank[currentPlan]
             const isLoading = loadingPlan === plan.id
 
             return (
@@ -129,13 +142,19 @@ export function SubscriptionPage({ user, onUpdated }) {
 
                 <Button
                   type="button"
-                  variant={isCurrent || isFree ? 'secondary' : 'primary'}
-                  disabled={isCurrent || isFree || Boolean(loadingPlan)}
+                  variant={isCurrent || isFree || isDowngrade ? 'secondary' : 'primary'}
+                  disabled={isCurrent || isFree || isDowngrade || Boolean(loadingPlan)}
                   onClick={() => startCheckout(plan)}
                   className="mt-6 w-full"
                 >
                   <CreditCard size={17} />
-                  {isCurrent ? 'Current plan' : isFree ? 'Included' : isLoading ? 'Opening checkout...' : `Upgrade to ${plan.name}`}
+                  {planButtonLabel({
+                    isCurrent,
+                    isFree,
+                    isDowngrade,
+                    isLoading,
+                    planName: plan.name,
+                  })}
                 </Button>
               </article>
             )
