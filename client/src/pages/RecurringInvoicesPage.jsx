@@ -1,4 +1,4 @@
-import { ArrowLeft, CalendarClock, Edit3, Eye, Plus, RefreshCw, Repeat, Search, Trash2, Wand2 } from 'lucide-react'
+import { ArrowLeft, CalendarClock, Edit3, Eye, Plus, RefreshCw, Search, Trash2, Wand2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '../components/Button'
 import { EmptyState } from '../components/EmptyState'
@@ -10,7 +10,7 @@ import { PageHeader } from '../components/PageHeader'
 import { StatusPill } from '../components/StatusPill'
 import { useDebounce } from '../hooks/useDebounce'
 import { clientApi, productApi, recurringInvoiceApi } from '../services/api'
-import { formatDate } from '../utils/format'
+import { formatDate, formatDateOnly } from '../utils/format'
 
 const currencies = ['PH', 'USD', 'EUR', 'CAD', 'AUD']
 const intervals = ['weekly', 'monthly', 'quarterly', 'yearly']
@@ -231,8 +231,8 @@ export function RecurringInvoicesPage({ user, onNavigate }) {
               </div>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-3">
-              <MobileMeta label="Next issue">{formatDate(template.nextIssueDate)}</MobileMeta>
-              <MobileMeta label="End date">{formatDate(template.endDate)}</MobileMeta>
+              <MobileMeta label="Next issue">{formatDateOnly(template.nextIssueDate)}</MobileMeta>
+              <MobileMeta label="End date">{formatDateOnly(template.endDate)}</MobileMeta>
               <MobileMeta label="Due after">{template.dueDaysAfterIssue} days</MobileMeta>
               <MobileMeta label="Status"><TemplateStatus template={template} /></MobileMeta>
             </div>
@@ -257,8 +257,8 @@ export function RecurringInvoicesPage({ user, onNavigate }) {
               <tr key={template.id} className="hover:bg-surface/70">
                 <td className="px-5 py-3"><p className="font-medium">{template.client?.name ?? 'Unknown'}</p><p className="text-muted">{template.client?.email ?? ''}</p></td>
                 <td className="px-5 py-3 capitalize">{intervalLabel(template.interval)}</td>
-                <td className="px-5 py-3">{formatDate(template.nextIssueDate)}</td>
-                <td className="px-5 py-3">{formatDate(template.endDate)}</td>
+                <td className="px-5 py-3">{formatDateOnly(template.nextIssueDate)}</td>
+                <td className="px-5 py-3">{formatDateOnly(template.endDate)}</td>
                 <td className="px-5 py-3"><TemplateStatus template={template} /></td>
                 <td className="px-5 py-3 text-right">
                   <Button variant="ghost" className="mr-1 w-10 px-0" title="View schedule" aria-label="View schedule" onClick={() => onNavigate('recurring-detail', { recurringInvoiceId: template.id })}><Eye size={17} /></Button>
@@ -559,11 +559,11 @@ export function RecurringInvoiceDetailPage({ recurringInvoiceId, user, onNavigat
           <div className="grid gap-4 md:grid-cols-4">
             <div><p className="text-xs text-muted">Client</p><p className="font-semibold">{template.client?.name}</p><p className="text-sm text-muted">{template.client?.email}</p></div>
             <div><p className="text-xs text-muted">Interval</p><p className="font-semibold capitalize">{intervalLabel(template.interval)}</p></div>
-            <div><p className="text-xs text-muted">Next issue</p><p className="font-semibold">{formatDate(template.nextIssueDate)}</p></div>
+            <div><p className="text-xs text-muted">Next issue</p><p className="font-semibold">{formatDateOnly(template.nextIssueDate)}</p></div>
             <div><p className="text-xs text-muted">Status</p><TemplateStatus template={template} /></div>
           </div>
           <div className="grid gap-4 md:grid-cols-4">
-            <div><p className="text-xs text-muted">End date</p><p className="font-semibold">{formatDate(template.endDate)}</p></div>
+            <div><p className="text-xs text-muted">End date</p><p className="font-semibold">{formatDateOnly(template.endDate)}</p></div>
             <div><p className="text-xs text-muted">Due days</p><p className="font-semibold">{template.dueDaysAfterIssue} days</p></div>
             <div><p className="text-xs text-muted">Currency</p><p className="font-semibold">{template.currency}</p></div>
             <div><p className="text-xs text-muted">Created</p><p className="font-semibold">{formatDate(template.createdAt)}</p></div>

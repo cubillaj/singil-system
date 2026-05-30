@@ -7,6 +7,14 @@ export function formatDate(value) {
   }).format(new Date(value))
 }
 
+export function formatDateOnly(value) {
+  if (!value) return 'Not set'
+
+  return new Intl.DateTimeFormat('en-PH', {
+    dateStyle: 'medium',
+  }).format(new Date(value))
+}
+
 export function getInitials(user) {
   const first = user?.name?.[0] ?? ''
   const last = user?.lastName?.[0] ?? ''

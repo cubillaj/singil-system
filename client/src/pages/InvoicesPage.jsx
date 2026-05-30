@@ -380,7 +380,6 @@ export function InvoiceFormPage({ invoiceId, onNavigate }) {
               {clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}
             </select>
           </Field>
-          <Field label="Invoice number"><input className={inputClassName()} value={form.invoiceNumber} onChange={(event) => setForm({ ...form, invoiceNumber: event.target.value })} disabled={loading} /></Field>
           <Field label="Status">
             <select className={inputClassName()} value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })} disabled={loading}>
               {statuses.map((status) => <option key={status} value={status}>{status}</option>)}
