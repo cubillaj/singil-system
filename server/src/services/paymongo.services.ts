@@ -7,8 +7,8 @@ import { PAYMONGO_API, payMongoAuthHeaders } from "../utils/paymongo.utils.js";
 import { getFirstZodMessage } from "../utils/zodErrors.js";
 
 export const subscriptionPrices = {
-  pro: "200.00",
-  business: "500.00",
+  pro: "75.00",
+  business: "150.00",
 } as const;
 
 const toPayMongoCurrency = (currency: string) => currency === "PH" ? "PHP" : currency;

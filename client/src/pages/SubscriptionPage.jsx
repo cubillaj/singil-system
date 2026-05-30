@@ -17,14 +17,14 @@ const plans = [
   {
     id: 'pro',
     name: 'Pro',
-    price: 'PHP 200',
+    price: 'PHP 75',
     description: 'For teams that need smoother invoice and payment operations.',
     features: ['Recurring invoice tools', 'Payment tracking', 'Workspace billing controls'],
   },
   {
     id: 'business',
     name: 'Business',
-    price: 'PHP 500',
+    price: 'PHP 150',
     description: 'For growing teams that need more room and stronger billing workflows.',
     features: ['Advanced operations', 'Priority billing workflows', 'Business-ready controls'],
   },
