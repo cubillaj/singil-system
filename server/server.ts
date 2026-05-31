@@ -20,7 +20,7 @@ import { scheduleRecurringInvoiceJob } from "./src/queues/recurring-invoice.queu
 import subscriptionRoutes from './src/routes/subscription.routes.js'
 import webhookRoutes from './src/routes/webhook.routes.js'
 import paymentRoutes from './src/routes/payment.routes.js'
-
+import dashboardRoutes from './src/routes/dashboard.routes.js'
 const app = express();
 
 const devOrigins = ['http://localhost:5173', 'http://localhost:5174']
@@ -47,6 +47,7 @@ app.use("/api/recurring-invoices", recurringInvoicesRoutes)
 app.use("/api/export-invoice", exportRoutes)
 app.use("/api/subscription", subscriptionRoutes)
 app.use('/api/payment', paymentRoutes)
+app.use('/api/dashboard', dashboardRoutes)
 app.use(errorMiddleware)
 
 const PORT = Number(process.env.PORT) || 5000;
