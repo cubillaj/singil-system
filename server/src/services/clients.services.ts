@@ -1,6 +1,6 @@
-import { and, eq } from "drizzle-orm"
+import { and, eq, sql } from "drizzle-orm"
 import { db } from "../db/db.js"
-import { clients } from "../db/schema.js"
+import { clients, organizations } from "../db/schema.js"
 import { AppError } from "../utils/appError.js"
 import { getFirstZodMessage } from "../utils/zodErrors.js"
 import { CreateClientSchema, DeleteClientSchema, GetSingleClientSchena, UpdateClientSchema } from "../validation/clients.validation.js"
@@ -18,6 +18,25 @@ export const createClient = async (data: unknown) => {
         barangay,province,region,currency,company,taxId,addressLine1,
         addressLine2,city,state,postalCode,country,notes
      } = parsed.data
+
+     const [organization] = await db.select({
+        plan: organizations.plan
+     })
+     .from(organizations)
+     .where(eq(organizations.id, organizationId))
+
+     if(!organization) throw new AppError('Organization is not found', 404)
+    
+    if(organization.plan === 'free') {
+        const [{count}] = await db.select({ count: sql<number>`count(*)`})
+                                    .from(clients)
+                                    .where(eq(clients.organizationId, organizationId))
+
+
+        if (Number(count) >= 3) {
+            throw new AppError('You can only create 3 clients for free plan.', 400)
+        }                
+    }
 
      const client = await db.insert(clients)
                             .values({

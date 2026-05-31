@@ -148,6 +148,20 @@ export const invoiceApi = {
   },
 }
 
+export const paymentApi = {
+  list: (params = {}) => apiRequest(`/api/payment?${new URLSearchParams(params)}`),
+  get: (id) => apiRequest(`/api/payment/${id}`),
+  create: (invoiceId, payload) => apiRequest(`/api/payment/${invoiceId}`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }),
+  update: (id, payload) => apiRequest(`/api/payment/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  }),
+  delete: (id) => apiRequest(`/api/payment/${id}`, { method: 'DELETE' }),
+}
+
 export const recurringInvoiceApi = {
   list: (params = {}) => apiRequest(`/api/recurring-invoices?${new URLSearchParams(params)}`),
   get: (id) => apiRequest(`/api/recurring-invoices/${id}`),

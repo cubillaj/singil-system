@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm"
+import { and, eq, sql } from "drizzle-orm"
 import { db } from "../db/db.js"
 import { organizations, products } from "../db/schema.js"
 import { AppError } from "../utils/appError.js"
@@ -28,11 +28,22 @@ export const createProduct = async (organizationId: number ,data: unknown) => {
     const organization = await db.query.organizations.findFirst({
         where: eq(organizations.id, organizationId),
         columns: {
-            id: true
+            id: true,
+            plan: true
         }
     })
 
     if (!organization) throw new AppError('Organization is not found', 404)
+
+    if(organization.plan === 'free') {
+        const [{count}] = await db.select({ count: sql<number>`count(*)`})
+                                    .from(products)
+                                    .where(eq(products.organizationId, organization.id))
+
+        if(Number(count) >= 7) {
+            throw new AppError('You can only create 7 products for your organization in free plan.', 400)
+        }
+    }
 
     const [product] = await db.insert(products)
                             .values({

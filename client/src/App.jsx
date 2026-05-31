@@ -9,6 +9,7 @@ import { MemberEditPage, MemberPasswordPage, MembersPage } from './pages/Members
 import { OrganizationPage } from './pages/OrganizationPage'
 import { ChangePasswordPage, ProfileEditPage, ProfilePage } from './pages/ProfilePage'
 import { ProductFormPage, ProductsPage } from './pages/ProductsPage'
+import { PaymentDetailPage, PaymentsPage } from './pages/PaymentsPage'
 import { RecurringInvoiceDetailPage, RecurringInvoiceFormPage, RecurringInvoicesPage } from './pages/RecurringInvoicesPage'
 import { SubscriptionPage } from './pages/SubscriptionPage'
 
@@ -33,6 +34,8 @@ function canAccessPage(role, page) {
     'invoice-new': ['admin', 'member', 'owner'],
     'invoice-detail': ['admin', 'member', 'owner'],
     'invoice-edit': ['admin', 'member', 'owner'],
+    payments: ['admin', 'member', 'owner'],
+    'payment-detail': ['admin', 'member', 'owner'],
     recurring: ['admin', 'member', 'owner'],
     'recurring-new': ['admin', 'owner'],
     'recurring-detail': ['admin', 'member', 'owner'],
@@ -64,6 +67,8 @@ function pageToPath(page, params = {}) {
     'invoice-new': '/dashboard/invoices/new',
     'invoice-detail': `/dashboard/invoices/${params.invoiceId}`,
     'invoice-edit': `/dashboard/invoices/${params.invoiceId}/edit`,
+    payments: '/dashboard/payments',
+    'payment-detail': `/dashboard/payments/${params.paymentId}`,
     recurring: '/dashboard/recurring-invoices',
     'recurring-new': '/dashboard/recurring-invoices/new',
     'recurring-detail': `/dashboard/recurring-invoices/${params.recurringInvoiceId}`,
@@ -94,6 +99,8 @@ function activePageFromPath(pathname) {
   if (pathname.startsWith('/dashboard/invoices/') && pathname.endsWith('/edit')) return 'invoice-edit'
   if (pathname.startsWith('/dashboard/invoices/')) return 'invoice-detail'
   if (pathname === '/dashboard/invoices') return 'invoices'
+  if (pathname.startsWith('/dashboard/payments/')) return 'payment-detail'
+  if (pathname === '/dashboard/payments') return 'payments'
   if (pathname === '/dashboard/recurring-invoices/new') return 'recurring-new'
   if (pathname.startsWith('/dashboard/recurring-invoices/') && pathname.endsWith('/edit')) return 'recurring-edit'
   if (pathname.startsWith('/dashboard/recurring-invoices/')) return 'recurring-detail'
@@ -112,6 +119,7 @@ function routeRootPage(page) {
   if (page.startsWith('client-')) return 'clients'
   if (page.startsWith('product-')) return 'products'
   if (page.startsWith('invoice-')) return 'invoices'
+  if (page.startsWith('payment-')) return 'payments'
   if (page.startsWith('recurring-')) return 'recurring'
   if (page.startsWith('member-')) return 'members'
   if (page.startsWith('invitation-')) return 'invitations'
@@ -155,6 +163,11 @@ function InvoiceDetailRoute({ onNavigate }) {
 function InvoiceEditRoute({ onNavigate }) {
   const { invoiceId } = useParams()
   return <InvoiceFormPage invoiceId={invoiceId} onNavigate={onNavigate} />
+}
+
+function PaymentDetailRoute({ onNavigate }) {
+  const { paymentId } = useParams()
+  return <PaymentDetailPage paymentId={paymentId} onNavigate={onNavigate} />
 }
 
 function RecurringInvoiceDetailRoute({ user, onNavigate }) {
@@ -208,6 +221,8 @@ function App() {
         <Route path="/dashboard/invoices/new" element={<ProtectedPage user={auth.user} page="invoice-new"><InvoiceFormPage onNavigate={navigateToPage} /></ProtectedPage>} />
         <Route path="/dashboard/invoices/:invoiceId" element={<ProtectedPage user={auth.user} page="invoice-detail"><InvoiceDetailRoute onNavigate={navigateToPage} /></ProtectedPage>} />
         <Route path="/dashboard/invoices/:invoiceId/edit" element={<ProtectedPage user={auth.user} page="invoice-edit"><InvoiceEditRoute onNavigate={navigateToPage} /></ProtectedPage>} />
+        <Route path="/dashboard/payments" element={<ProtectedPage user={auth.user} page="payments"><PaymentsPage onNavigate={navigateToPage} /></ProtectedPage>} />
+        <Route path="/dashboard/payments/:paymentId" element={<ProtectedPage user={auth.user} page="payment-detail"><PaymentDetailRoute onNavigate={navigateToPage} /></ProtectedPage>} />
         <Route path="/dashboard/recurring-invoices" element={<ProtectedPage user={auth.user} page="recurring"><RecurringInvoicesPage user={auth.user} onNavigate={navigateToPage} /></ProtectedPage>} />
         <Route path="/dashboard/recurring-invoices/new" element={<ProtectedPage user={auth.user} page="recurring-new"><RecurringInvoiceFormPage onNavigate={navigateToPage} /></ProtectedPage>} />
         <Route path="/dashboard/recurring-invoices/:recurringInvoiceId" element={<ProtectedPage user={auth.user} page="recurring-detail"><RecurringInvoiceDetailRoute user={auth.user} onNavigate={navigateToPage} /></ProtectedPage>} />

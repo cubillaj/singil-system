@@ -1,4 +1,4 @@
-import { ArrowLeft, Edit3, Eye, FileDown, Plus, RefreshCw, Search, Trash2 } from 'lucide-react'
+import { ArrowLeft, Edit3, Eye, FileDown, Plus, RefreshCw, Search, Trash2, WalletCards } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '../components/Button'
 import { EmptyState } from '../components/EmptyState'
@@ -9,11 +9,17 @@ import { Notice } from '../components/Notice'
 import { PageHeader } from '../components/PageHeader'
 import { StatusPill } from '../components/StatusPill'
 import { useDebounce } from '../hooks/useDebounce'
-import { clientApi, invoiceApi, productApi } from '../services/api'
+import { clientApi, invoiceApi, paymentApi, productApi } from '../services/api'
 import { formatDate } from '../utils/format'
 
 const currencies = ['PH', 'USD', 'EUR', 'CAD', 'AUD']
 const statuses = ['draft', 'sent', 'viewed', 'paid', 'overdue', 'cancelled']
+const paymentMethods = [
+  ['bank_transfer', 'Bank transfer'],
+  ['gcash', 'GCash'],
+  ['maya', 'Maya'],
+  ['other', 'Other'],
+]
 
 const emptyInvoice = {
   clientId: '',
@@ -482,20 +488,24 @@ export function InvoiceDetailPage({ invoiceId, onNavigate }) {
   const [invoice, setInvoice] = useState(null)
   const [notice, setNotice] = useState({ tone: 'error', message: '' })
   const [loading, setLoading] = useState(true)
+  const [paymentForm, setPaymentForm] = useState({ amount: '', method: 'bank_transfer', reference: '', note: '', paidAt: '' })
+  const [savingPayment, setSavingPayment] = useState(false)
+
+  const loadInvoice = async () => {
+    setLoading(true)
+    try {
+      const data = await invoiceApi.get(invoiceId)
+      setInvoice(data.invoice)
+    } catch (err) {
+      setNotice({ tone: 'error', message: err.message })
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const loadInvoice = async () => {
-      setLoading(true)
-      try {
-        const data = await invoiceApi.get(invoiceId)
-        setInvoice(data.invoice)
-      } catch (err) {
-        setNotice({ tone: 'error', message: err.message })
-      } finally {
-        setLoading(false)
-      }
-    }
     loadInvoice()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invoiceId])
 
   const loadExport = async () => {
@@ -513,9 +523,30 @@ export function InvoiceDetailPage({ invoiceId, onNavigate }) {
     }
   }
 
+  const recordPayment = async (event) => {
+    event.preventDefault()
+    setSavingPayment(true)
+    setNotice({ tone: 'error', message: '' })
+    try {
+      const payload = Object.fromEntries(
+        Object.entries(paymentForm)
+          .map(([key, value]) => [key, typeof value === 'string' ? value.trim() : value])
+          .filter(([, value]) => value !== ''),
+      )
+      await paymentApi.create(invoiceId, payload)
+      setPaymentForm({ amount: '', method: 'bank_transfer', reference: '', note: '', paidAt: '' })
+      setNotice({ tone: 'success', message: 'Payment recorded successfully.' })
+      await loadInvoice()
+    } catch (err) {
+      setNotice({ tone: 'error', message: err.message })
+    } finally {
+      setSavingPayment(false)
+    }
+  }
+
   return (
     <section>
-      <PageHeader title={invoice?.invoiceNumber ?? 'Invoice'} description="Invoice detail with client and line items." action={<div className="flex gap-2"><Button variant="secondary" onClick={() => onNavigate('invoices')}><ArrowLeft size={16} />Back</Button><Button variant="secondary" onClick={() => onNavigate('invoice-edit', { invoiceId })}><Edit3 size={16} />Edit</Button><Button onClick={loadExport}><FileDown size={16} />Export</Button></div>} />
+      <PageHeader title={invoice?.invoiceNumber ?? 'Invoice'} description="Invoice detail with client and line items." action={<div className="flex gap-2"><Button variant="secondary" onClick={() => onNavigate('invoices')}><ArrowLeft size={16} />Back</Button><Button variant="secondary" onClick={() => onNavigate('invoice-edit', { invoiceId })}><Edit3 size={16} />Edit</Button><Button variant="secondary" onClick={() => onNavigate('payments')}>Payments</Button><Button onClick={loadExport}><FileDown size={16} />Export</Button></div>} />
       <div className="p-5"><Notice tone={notice.tone}>{notice.message}</Notice></div>
       {!loading && invoice ? (
         <div className="grid gap-5 p-5">
@@ -553,6 +584,20 @@ export function InvoiceDetailPage({ invoiceId, onNavigate }) {
             <p>Paid: <strong>{money(invoice.currency, invoice.amountPaid)}</strong></p>
             <p>Due: <strong>{money(invoice.currency, invoice.amountDue)}</strong></p>
           </div>
+          {Number(invoice.amountDue ?? 0) > 0 ? (
+            <form onSubmit={recordPayment} className="grid gap-4 border-t border-line pt-5 md:grid-cols-5">
+              <Field label="Amount"><input className={inputClassName()} type="number" min="0.01" max={invoice.amountDue} step="0.01" value={paymentForm.amount} onChange={(event) => setPaymentForm({ ...paymentForm, amount: event.target.value })} required /></Field>
+              <Field label="Method">
+                <select className={inputClassName()} value={paymentForm.method} onChange={(event) => setPaymentForm({ ...paymentForm, method: event.target.value })}>
+                  {paymentMethods.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                </select>
+              </Field>
+              <Field label="Reference"><input className={inputClassName()} value={paymentForm.reference} onChange={(event) => setPaymentForm({ ...paymentForm, reference: event.target.value })} /></Field>
+              <Field label="Paid at"><input className={inputClassName()} type="date" value={paymentForm.paidAt} onChange={(event) => setPaymentForm({ ...paymentForm, paidAt: event.target.value })} /></Field>
+              <div className="flex items-end"><Button type="submit" disabled={savingPayment}><WalletCards size={16} />{savingPayment ? 'Recording...' : 'Record'}</Button></div>
+              <Field label="Note"><textarea className={inputClassName('min-h-20 resize-y py-2 md:col-span-5')} value={paymentForm.note} onChange={(event) => setPaymentForm({ ...paymentForm, note: event.target.value })} /></Field>
+            </form>
+          ) : null}
         </div>
       ) : null}
     </section>

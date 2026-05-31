@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm"
+import { and, eq, sql } from "drizzle-orm"
 import { db } from "../db/db.js"
 import { organizationInvites, organizations, users } from "../db/schema.js"
 import { AppError } from "../utils/appError.js"
@@ -95,7 +95,6 @@ export const createOrganizationInvitation = async (userId: number, userRole: str
         throw new AppError('Organization is required', 400)
     }
 
-    // Only allow users to create invites for the organization stored in their session.
     const existingUser = await db.query.users.findFirst({
         where: and(
             eq(users.organizationId, organizationId),
@@ -115,6 +114,26 @@ export const createOrganizationInvitation = async (userId: number, userRole: str
     }
 
     orgId = existingUser.organizationId
+    }
+
+    const [organizationPlan] = await db.select({
+        plan: organizations.plan
+    })
+        .from(organizations)
+        .where(eq(organizations.id, orgId))
+
+    if (!organizationPlan) {
+        throw new AppError('Organization is not found', 404)
+    }
+
+    if (organizationPlan.plan === 'free') {
+        const [{ count }] = await db.select({ count: sql<number>`count(*)` })
+            .from(organizationInvites)
+            .where(eq(organizationInvites.organizationId, orgId))
+
+        if (Number(count) >= 3) {
+            throw new AppError('Free plan organizations can only create 3 invitations.', 403)
+        }
     }
 
     // Return the invitation code so the client can share it with the invited user.
@@ -146,6 +165,27 @@ export const deleteInvitation = async (ids: unknown) => {
     }
 
     const {id, organizationId} = parsedIds.data
+
+    const organizationInvite = await db.query.organizationInvites.findFirst({
+        where: and(eq(organizationInvites.id, id), eq(organizationInvites.organizationId, organizationId)),
+        columns: {
+            id: true,
+            usedAt: true
+        },
+        with: {
+            organization: {
+                columns: {
+                    plan: true
+                }
+            }
+        }
+    })
+
+    if (!organizationInvite) throw new AppError('Organization invite is not found', 404)
+
+    if(organizationInvite.usedAt !== null && organizationInvite.organization.plan === 'free') {
+        throw new AppError('You cannot delete invitation that is already used in free plan.', 403)
+    }
 
     const [deletedInvitation] = await db.delete(organizationInvites)
                                         .where(and(

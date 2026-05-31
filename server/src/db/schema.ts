@@ -294,7 +294,7 @@ export const payments = pgTable("payments", {
     .references(() => organizations.id, { onDelete: "cascade" }),
  
   amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
-  currency: currencyEnum("currency").default("USD").notNull(),
+  currency: currencyEnum("currency").default("PH").notNull(),
   method: paymentMethodEnum("method").notNull(),
   reference: varchar("reference", { length: 255 }), // e.g. gcash charge ID
   note: text("note"),
