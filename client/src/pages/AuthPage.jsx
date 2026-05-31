@@ -27,8 +27,8 @@ const features = [
 
 const plans = [
   { name: 'Free', price: 'PHP 0', text: 'For solo testing and early setup.', items: ['Basic clients', 'Products list', 'Team invitations'] },
-  { name: 'Pro', price: 'PHP 200', text: 'For active freelancers and small teams.', items: ['More invoice workflows', 'Payment tracking', 'Priority workspace tools'] },
-  { name: 'Business', price: 'PHP 500', text: 'For teams that need stronger controls.', items: ['Advanced team access', 'Recurring billing', 'Business reporting'] },
+  { name: 'Pro', price: 'PHP 75', text: 'For active freelancers and small teams.', items: ['More invoice workflows', 'Payment tracking', 'Priority workspace tools'] },
+  { name: 'Business', price: 'PHP 150', text: 'For teams that need stronger controls.', items: ['Advanced team access', 'Recurring billing', 'Business reporting'] },
 ]
 
 function PublicNav() {

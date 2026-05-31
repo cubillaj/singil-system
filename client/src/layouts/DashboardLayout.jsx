@@ -1,8 +1,9 @@
-import { BriefcaseBusiness, Building2, CircleUser, CreditCard, FileText, LogOut, MailPlus, Package, ReceiptText, Repeat, Settings, Users } from 'lucide-react'
+import { BriefcaseBusiness, Building2, CircleUser, CreditCard, FileText, LayoutDashboard, LogOut, MailPlus, Package, ReceiptText, Repeat, Settings, Users } from 'lucide-react'
 import { Button } from '../components/Button'
 import { getInitials, roleLabel } from '../utils/format'
 import logoImage from '../assets/singil-favicon-green.svg'
 const navItems = [
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'member', 'owner'] },
   { id: 'members', label: 'Members', icon: Users, roles: ['admin', 'owner'] },
   { id: 'clients', label: 'Clients', icon: BriefcaseBusiness, roles: ['admin', 'member', 'owner'] },
   { id: 'products', label: 'Products', icon: Package, roles: ['admin', 'member', 'owner'] },

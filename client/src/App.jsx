@@ -2,6 +2,7 @@ import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 're
 import { DashboardLayout } from './layouts/DashboardLayout'
 import { useAuth } from './hooks/useAuth'
 import { AuthPage } from './pages/AuthPage'
+import { DashboardPage } from './pages/DashboardPage'
 import { ClientFormPage, ClientsPage } from './pages/ClientsPage'
 import { InvitationCreatePage, InvitationsPage } from './pages/InvitationsPage'
 import { InvoiceDetailPage, InvoiceFormPage, InvoicesPage } from './pages/InvoicesPage'
@@ -15,12 +16,12 @@ import { SubscriptionPage } from './pages/SubscriptionPage'
 
 function defaultPageForRole(role) {
   if (role === 'system_admin') return '/dashboard/invitations'
-  if (role === 'member') return '/dashboard/clients'
-  return '/dashboard/members'
+  return '/dashboard'
 }
 
 function canAccessPage(role, page) {
   const access = {
+    dashboard: ['admin', 'member', 'owner'],
     members: ['admin', 'owner'],
     'member-edit': ['admin', 'owner'],
     'member-password': ['admin', 'owner'],
@@ -54,6 +55,7 @@ function canAccessPage(role, page) {
 
 function pageToPath(page, params = {}) {
   const paths = {
+    dashboard: '/dashboard',
     members: '/dashboard/members',
     'member-edit': `/dashboard/members/${params.memberId}/edit`,
     'member-password': `/dashboard/members/${params.memberId}/password`,
@@ -86,6 +88,7 @@ function pageToPath(page, params = {}) {
 }
 
 function activePageFromPath(pathname) {
+  if (pathname === '/dashboard') return 'dashboard'
   if (pathname.startsWith('/dashboard/members/') && pathname.endsWith('/edit')) return 'member-edit'
   if (pathname.startsWith('/dashboard/members/') && pathname.endsWith('/password')) return 'member-password'
   if (pathname === '/dashboard/members') return 'members'
@@ -207,7 +210,7 @@ function App() {
   return (
     <DashboardLayout user={auth.user} activePage={activeRootPage} onNavigate={navigateToPage} onLogout={auth.logout}>
       <Routes>
-        <Route path="/dashboard" element={<Navigate to={defaultPageForRole(auth.user?.role)} replace />} />
+        <Route path="/dashboard" element={<ProtectedPage user={auth.user} page="dashboard"><DashboardPage user={auth.user} onNavigate={navigateToPage} /></ProtectedPage>} />
         <Route path="/dashboard/members" element={<ProtectedPage user={auth.user} page="members"><MembersPage user={auth.user} onNavigate={navigateToPage} /></ProtectedPage>} />
         <Route path="/dashboard/members/:memberId/edit" element={<ProtectedPage user={auth.user} page="member-edit"><MemberEditRoute user={auth.user} onNavigate={navigateToPage} /></ProtectedPage>} />
         <Route path="/dashboard/members/:memberId/password" element={<ProtectedPage user={auth.user} page="member-password"><MemberPasswordRoute user={auth.user} onNavigate={navigateToPage} /></ProtectedPage>} />

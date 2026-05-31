@@ -74,6 +74,14 @@ export const userApi = {
   }),
 }
 
+export const dashboardApi = {
+  get: (role) => {
+    const endpoint = role === 'owner' ? 'owner' : role === 'admin' ? 'admin' : role === 'member' ? 'member' : ''
+    if (!endpoint) return Promise.resolve({})
+    return apiRequest(`/api/dashboard/${endpoint}`)
+  },
+}
+
 export const invitationApi = {
   list: (params = {}) => apiRequest(`/api/invitation?${new URLSearchParams(params)}`),
   create: (payload) => apiRequest('/api/invitation', {
