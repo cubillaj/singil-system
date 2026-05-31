@@ -1,0 +1,29 @@
+ALTER TABLE "payments" ALTER COLUMN "currency" SET DEFAULT 'PH';--> statement-breakpoint
+CREATE INDEX "clients_organization_created_at_idx" ON "clients" USING btree ("organization_id","created_at");--> statement-breakpoint
+CREATE INDEX "clients_organization_currency_idx" ON "clients" USING btree ("organization_id","currency");--> statement-breakpoint
+CREATE INDEX "invoice_items_invoice_id_idx" ON "invoice_items" USING btree ("invoice_id");--> statement-breakpoint
+CREATE INDEX "invoice_items_product_id_idx" ON "invoice_items" USING btree ("product_id");--> statement-breakpoint
+CREATE INDEX "invoices_organization_created_at_idx" ON "invoices" USING btree ("organization_id","created_at");--> statement-breakpoint
+CREATE INDEX "invoices_organization_status_created_at_idx" ON "invoices" USING btree ("organization_id","status","created_at");--> statement-breakpoint
+CREATE INDEX "invoices_organization_currency_created_at_idx" ON "invoices" USING btree ("organization_id","currency","created_at");--> statement-breakpoint
+CREATE INDEX "invoices_organization_issue_date_idx" ON "invoices" USING btree ("organization_id","issue_date");--> statement-breakpoint
+CREATE INDEX "invoices_organization_due_date_idx" ON "invoices" USING btree ("organization_id","due_date");--> statement-breakpoint
+CREATE INDEX "invoices_client_id_idx" ON "invoices" USING btree ("client_id");--> statement-breakpoint
+CREATE INDEX "organization_invites_organization_created_at_idx" ON "organization_invites" USING btree ("organization_id","created_at");--> statement-breakpoint
+CREATE INDEX "organization_invites_organization_expires_at_idx" ON "organization_invites" USING btree ("organization_id","expires_at");--> statement-breakpoint
+CREATE INDEX "organization_invites_created_by_id_idx" ON "organization_invites" USING btree ("created_by_id");--> statement-breakpoint
+CREATE INDEX "payments_organization_created_at_idx" ON "payments" USING btree ("organization_id","created_at");--> statement-breakpoint
+CREATE INDEX "payments_organization_invoice_id_idx" ON "payments" USING btree ("organization_id","invoice_id");--> statement-breakpoint
+CREATE INDEX "payments_invoice_id_idx" ON "payments" USING btree ("invoice_id");--> statement-breakpoint
+CREATE INDEX "products_organization_created_at_idx" ON "products" USING btree ("organization_id","created_at");--> statement-breakpoint
+CREATE INDEX "recurring_invoice_items_recurring_invoice_id_idx" ON "recurring_invoice_items" USING btree ("recurring_invoice_id");--> statement-breakpoint
+CREATE INDEX "recurring_invoice_items_product_id_idx" ON "recurring_invoice_items" USING btree ("product_id");--> statement-breakpoint
+CREATE INDEX "recurring_invoices_organization_created_at_idx" ON "recurring_invoices" USING btree ("organization_id","created_at");--> statement-breakpoint
+CREATE INDEX "recurring_invoices_organization_active_created_at_idx" ON "recurring_invoices" USING btree ("organization_id","is_active","created_at");--> statement-breakpoint
+CREATE INDEX "recurring_invoices_organization_interval_created_at_idx" ON "recurring_invoices" USING btree ("organization_id","interval","created_at");--> statement-breakpoint
+CREATE INDEX "recurring_invoices_due_job_idx" ON "recurring_invoices" USING btree ("is_active","auto_send","next_issue_date");--> statement-breakpoint
+CREATE INDEX "recurring_invoices_client_id_idx" ON "recurring_invoices" USING btree ("client_id");--> statement-breakpoint
+CREATE INDEX "subscription_payments_organization_created_at_idx" ON "subscription_payments" USING btree ("organization_id","created_at");--> statement-breakpoint
+CREATE INDEX "subscription_payments_subscription_id_idx" ON "subscription_payments" USING btree ("subscription_id");--> statement-breakpoint
+CREATE INDEX "users_organization_created_at_idx" ON "users" USING btree ("organization_id","created_at");--> statement-breakpoint
+CREATE INDEX "users_organization_status_idx" ON "users" USING btree ("organization_id","status");

@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { pgEnum, varchar, pgTable, serial, text, timestamp, uuid, boolean, integer, numeric, uniqueIndex} from "drizzle-orm/pg-core";
+import { pgEnum, varchar, pgTable, serial, text, timestamp, uuid, boolean, integer, numeric, uniqueIndex, index} from "drizzle-orm/pg-core";
 
 export const planEnum = pgEnum('plan',['free', 'pro', 'business'])
 
@@ -114,6 +114,13 @@ export const subscriptionPayments = pgTable("subscription_payments", {
 
   paidAt: timestamp("paid_at"),
   ...timestamps
+}, (table) => {
+  return {
+    subscriptionPaymentsOrganizationCreatedAtIdx: index("subscription_payments_organization_created_at_idx")
+      .on(table.organizationId, table.createdAt),
+    subscriptionPaymentsSubscriptionIdIdx: index("subscription_payments_subscription_id_idx")
+      .on(table.subscriptionId),
+  };
 });
 
 export const organizations = pgTable('organizations', {
@@ -142,6 +149,13 @@ export const users = pgTable("users", {
   emailVerifiedAt: timestamp('email_verified_at'),
   status: statusEnum('status').default('active'),
   ...timestamps
+}, (table) => {
+  return {
+    usersOrganizationCreatedAtIdx: index("users_organization_created_at_idx")
+      .on(table.organizationId, table.createdAt),
+    usersOrganizationStatusIdx: index("users_organization_status_idx")
+      .on(table.organizationId, table.status),
+  };
 });
 
 export const organizationInvites = pgTable('organization_invites', {
@@ -157,6 +171,15 @@ export const organizationInvites = pgTable('organization_invites', {
     .notNull()
     .references(() => users.id),
   ...timestamps
+}, (table) => {
+  return {
+    organizationInvitesOrganizationCreatedAtIdx: index("organization_invites_organization_created_at_idx")
+      .on(table.organizationId, table.createdAt),
+    organizationInvitesOrganizationExpiresAtIdx: index("organization_invites_organization_expires_at_idx")
+      .on(table.organizationId, table.expiresAt),
+    organizationInvitesCreatedByIdIdx: index("organization_invites_created_by_id_idx")
+      .on(table.createdById),
+  };
 });
 
 // clients
@@ -191,6 +214,13 @@ export const clients = pgTable("clients", {
   isArchived: boolean("is_archived").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => {
+  return {
+    clientsOrganizationCreatedAtIdx: index("clients_organization_created_at_idx")
+      .on(table.organizationId, table.createdAt),
+    clientsOrganizationCurrencyIdx: index("clients_organization_currency_idx")
+      .on(table.organizationId, table.currency),
+  };
 });
 
 // products
@@ -207,6 +237,11 @@ export const products = pgTable("products", {
   isArchived: boolean("is_archived").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => {
+  return {
+    productsOrganizationCreatedAtIdx: index("products_organization_created_at_idx")
+      .on(table.organizationId, table.createdAt),
+  };
 });
 
 // invocies
@@ -259,6 +294,18 @@ export const invoices = pgTable("invoices", {
   return {
     recurringInvoiceIssueDateUnique: uniqueIndex("invoices_recurring_invoice_issue_date_unique")
       .on(table.recurringInvoiceId, table.issueDate),
+    invoicesOrganizationCreatedAtIdx: index("invoices_organization_created_at_idx")
+      .on(table.organizationId, table.createdAt),
+    invoicesOrganizationStatusCreatedAtIdx: index("invoices_organization_status_created_at_idx")
+      .on(table.organizationId, table.status, table.createdAt),
+    invoicesOrganizationCurrencyCreatedAtIdx: index("invoices_organization_currency_created_at_idx")
+      .on(table.organizationId, table.currency, table.createdAt),
+    invoicesOrganizationIssueDateIdx: index("invoices_organization_issue_date_idx")
+      .on(table.organizationId, table.issueDate),
+    invoicesOrganizationDueDateIdx: index("invoices_organization_due_date_idx")
+      .on(table.organizationId, table.dueDate),
+    invoicesClientIdIdx: index("invoices_client_id_idx")
+      .on(table.clientId),
   };
 });
 
@@ -281,6 +328,13 @@ export const invoiceItems = pgTable("invoice_items", {
   sortOrder: integer("sort_order").default(0),
  
   createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => {
+  return {
+    invoiceItemsInvoiceIdIdx: index("invoice_items_invoice_id_idx")
+      .on(table.invoiceId),
+    invoiceItemsProductIdIdx: index("invoice_items_product_id_idx")
+      .on(table.productId),
+  };
 });
 
 // payemnts
@@ -301,6 +355,15 @@ export const payments = pgTable("payments", {
   paidAt: timestamp("paid_at").notNull(),
  
   createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => {
+  return {
+    paymentsOrganizationCreatedAtIdx: index("payments_organization_created_at_idx")
+      .on(table.organizationId, table.createdAt),
+    paymentsOrganizationInvoiceIdIdx: index("payments_organization_invoice_id_idx")
+      .on(table.organizationId, table.invoiceId),
+    paymentsInvoiceIdIdx: index("payments_invoice_id_idx")
+      .on(table.invoiceId),
+  };
 });
 
 // recurring invoices
@@ -328,6 +391,19 @@ export const recurringInvoices = pgTable("recurring_invoices", {
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => {
+  return {
+    recurringInvoicesOrganizationCreatedAtIdx: index("recurring_invoices_organization_created_at_idx")
+      .on(table.organizationId, table.createdAt),
+    recurringInvoicesOrganizationActiveCreatedAtIdx: index("recurring_invoices_organization_active_created_at_idx")
+      .on(table.organizationId, table.isActive, table.createdAt),
+    recurringInvoicesOrganizationIntervalCreatedAtIdx: index("recurring_invoices_organization_interval_created_at_idx")
+      .on(table.organizationId, table.interval, table.createdAt),
+    recurringInvoicesDueJobIdx: index("recurring_invoices_due_job_idx")
+      .on(table.isActive, table.autoSend, table.nextIssueDate),
+    recurringInvoicesClientIdIdx: index("recurring_invoices_client_id_idx")
+      .on(table.clientId),
+  };
 });
 
 // recurring invoice items
@@ -345,6 +421,13 @@ export const recurringInvoiceItems = pgTable("recurring_invoice_items", {
   taxRate: numeric("tax_rate", { precision: 5, scale: 2 }).default("0"),
   discount: numeric("discount", { precision: 5, scale: 2 }).default("0"),
   sortOrder: integer("sort_order").default(0),
+}, (table) => {
+  return {
+    recurringInvoiceItemsRecurringInvoiceIdIdx: index("recurring_invoice_items_recurring_invoice_id_idx")
+      .on(table.recurringInvoiceId),
+    recurringInvoiceItemsProductIdIdx: index("recurring_invoice_items_product_id_idx")
+      .on(table.productId),
+  };
 });
 
 
