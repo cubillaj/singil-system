@@ -6,10 +6,11 @@ type RateLimiterOptions = {
     keyPrefix: string,
     points: number,
     duration: number,
-    message: string
+    message: string,
+    includeSessionUser?: boolean
 }
 
-const createRedisRateLimiter = ({ keyPrefix, points, duration, message}: RateLimiterOptions ) => {
+const createRedisRateLimiter = ({ keyPrefix, points, duration, message, includeSessionUser = true}: RateLimiterOptions ) => {
     const limiter = new RateLimiterRedis({
         storeClient: redisClient,
         useRedisPackage: true,
@@ -21,7 +22,7 @@ const createRedisRateLimiter = ({ keyPrefix, points, duration, message}: RateLim
     return async (req: Request, res: Response, next: NextFunction) => {
         const ip = req.ip ?? req.socket.remoteAddress ?? 'unknown'
         const userId = req.authSession?.userId ?? req.session?.userId
-        const key = userId ? `${ip}:${userId}` : ip
+        const key = includeSessionUser && userId ? `${ip}:${userId}` : ip
 
         try {
             await limiter.consume(key)
@@ -43,14 +44,16 @@ export const authRateLimiter = createRedisRateLimiter({
     keyPrefix: 'auth',
     points: 15,
     duration: 15 * 60,
-    message: 'Too many login attempts. Please try again after 15 minutes.'
+    message: 'Too many login attempts. Please try again after 15 minutes.',
+    includeSessionUser: false
 })
 
 export const registerRateLimiter = createRedisRateLimiter({
     keyPrefix: 'auth_register',
     points: 5,
     duration: 60 * 60,
-    message: 'Too many registration attempts. Please try again after 1 hour.'
+    message: 'Too many registration attempts. Please try again after 1 hour.',
+    includeSessionUser: false
 })
 
 export const apiRateLimiter = createRedisRateLimiter({
