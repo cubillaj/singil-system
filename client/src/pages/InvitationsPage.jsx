@@ -31,7 +31,13 @@ export function InvitationsPage({ user, onNavigate }) {
   const [error, setError] = useState('')
   const [modal, setModal] = useState({ open: false })
   const [inviteToDelete, setInviteToDelete] = useState(null)
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
+  const [selectedInvitationIds, setSelectedInvitationIds] = useState([])
   const [loading, setLoading] = useState(false)
+
+  const selectedCount = selectedInvitationIds.length
+  const visibleInvitationIds = invitations.map((invitation) => invitation.id)
+  const allVisibleSelected = visibleInvitationIds.length > 0 && visibleInvitationIds.every((id) => selectedInvitationIds.includes(id))
 
   const loadInvitations = async () => {
     setLoading(true)
@@ -60,6 +66,7 @@ export function InvitationsPage({ user, onNavigate }) {
         role: invitation.role ?? 'member',
       })))
       setPagination(data.invitations?.pagination ?? data.pagination ?? pagination)
+      setSelectedInvitationIds([])
     } catch (err) {
       setError(err.message)
     } finally {
@@ -94,6 +101,47 @@ export function InvitationsPage({ user, onNavigate }) {
     }
   }
 
+  const toggleInvitationSelection = (id) => {
+    setSelectedInvitationIds((current) => (
+      current.includes(id)
+        ? current.filter((selectedId) => selectedId !== id)
+        : [...current, id]
+    ))
+  }
+
+  const toggleAllVisibleInvitations = () => {
+    setSelectedInvitationIds((current) => {
+      if (allVisibleSelected) {
+        return current.filter((id) => !visibleInvitationIds.includes(id))
+      }
+
+      return [...new Set([...current, ...visibleInvitationIds])]
+    })
+  }
+
+  const confirmBulkDeleteInvitations = async () => {
+    if (selectedCount === 0) return
+    const params = user?.role === 'system_admin' ? { organizationId: filters.organizationId } : {}
+    setError('')
+    try {
+      await invitationApi.bulkDelete(selectedInvitationIds, params)
+      setModal({
+        open: true,
+        tone: 'success',
+        title: 'Invitations deleted',
+        message: `${selectedCount} invitation${selectedCount === 1 ? '' : 's'} removed successfully.`,
+        confirmText: 'Done',
+        onConfirm: () => setModal({ open: false }),
+      })
+      setBulkDeleteOpen(false)
+      setSelectedInvitationIds([])
+      await loadInvitations()
+    } catch (err) {
+      setError(err.message)
+      setBulkDeleteOpen(false)
+    }
+  }
+
   return (
     <section>
       <Modal
@@ -114,6 +162,16 @@ export function InvitationsPage({ user, onNavigate }) {
         cancelText="Cancel"
         onConfirm={confirmDeleteInvitation}
         onCancel={() => setInviteToDelete(null)}
+      />
+      <Modal
+        open={bulkDeleteOpen}
+        tone="danger"
+        title="Delete selected invitations?"
+        message={`${selectedCount} invitation${selectedCount === 1 ? '' : 's'} will no longer be usable.`}
+        confirmText="Delete selected"
+        cancelText="Cancel"
+        onConfirm={confirmBulkDeleteInvitations}
+        onCancel={() => setBulkDeleteOpen(false)}
       />
       <PageHeader
         title="Invitations"
@@ -157,17 +215,40 @@ export function InvitationsPage({ user, onNavigate }) {
 
         <Notice>{error}</Notice>
 
+        {selectedCount > 0 ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-line bg-surface px-3 py-2 text-sm">
+            <span className="font-medium text-ink">{selectedCount} selected</span>
+            <div className="flex gap-2">
+              <Button variant="secondary" type="button" onClick={() => setSelectedInvitationIds([])}>Clear</Button>
+              <Button variant="danger" type="button" onClick={() => setBulkDeleteOpen(true)}>
+                <Trash2 size={16} />
+                Delete selected
+              </Button>
+            </div>
+          </div>
+        ) : null}
+
         <MobileList>
           {invitations.map((invitation) => {
             const expired = invitation.expiresAt && new Date(invitation.expiresAt) <= new Date()
             const used = Boolean(invitation.usedAt)
+            const selected = selectedInvitationIds.includes(invitation.id)
 
             return (
               <MobileCard key={invitation.id}>
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate font-mono text-xs font-semibold text-ink">{invitation.code}</p>
-                    <p className="mt-1 text-sm capitalize text-muted">{invitation.role ?? 'member'}</p>
+                  <div className="flex min-w-0 gap-3">
+                    <input
+                      type="checkbox"
+                      checked={selected}
+                      onChange={() => toggleInvitationSelection(invitation.id)}
+                      aria-label={`Select invitation ${invitation.code}`}
+                      className="mt-1 h-4 w-4 rounded border-line text-accent focus:ring-accent"
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate font-mono text-xs font-semibold text-ink">{invitation.code}</p>
+                      <p className="mt-1 text-sm capitalize text-muted">{invitation.role ?? 'member'}</p>
+                    </div>
                   </div>
                   <div className="flex shrink-0 gap-1">
                     <Button variant="ghost" title="Copy code" aria-label="Copy code" className="w-9 px-0" onClick={() => navigator.clipboard?.writeText(invitation.code)}>
@@ -195,6 +276,15 @@ export function InvitationsPage({ user, onNavigate }) {
           <table className="w-full min-w-[680px] text-left text-sm">
             <thead className="border-b border-line bg-surface text-xs uppercase text-muted">
               <tr>
+                <th className="w-12 px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={allVisibleSelected}
+                    onChange={toggleAllVisibleInvitations}
+                    aria-label="Select all visible invitations"
+                    className="h-4 w-4 rounded border-line text-accent focus:ring-accent"
+                  />
+                </th>
                 <th className="px-4 py-3 font-semibold">Code</th>
                 <th className="px-4 py-3 font-semibold">Role</th>
                 <th className="px-4 py-3 font-semibold">Expires</th>
@@ -206,9 +296,19 @@ export function InvitationsPage({ user, onNavigate }) {
               {invitations.map((invitation) => {
                 const expired = invitation.expiresAt && new Date(invitation.expiresAt) <= new Date()
                 const used = Boolean(invitation.usedAt)
+                const selected = selectedInvitationIds.includes(invitation.id)
 
                 return (
                   <tr key={invitation.id}>
+                    <td className="px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={selected}
+                        onChange={() => toggleInvitationSelection(invitation.id)}
+                        aria-label={`Select invitation ${invitation.code}`}
+                        className="h-4 w-4 rounded border-line text-accent focus:ring-accent"
+                      />
+                    </td>
                     <td className="px-4 py-3 font-mono text-xs text-ink">{invitation.code}</td>
                     <td className="px-4 py-3 capitalize">{invitation.role ?? 'member'}</td>
                     <td className="px-4 py-3 text-muted">{formatDate(invitation.expiresAt)}</td>

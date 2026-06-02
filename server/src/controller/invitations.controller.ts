@@ -45,7 +45,7 @@ export const createInvitationController = async (req: Request, res: Response) =>
 
 export const deleteOrganizationInvitesController = async (req: Request, res: Response) => {
     try {
-        const invitationId = Number(req.params.id)
+        const invitationIds = req.params.id ? Number(req.params.id) : req.body.ids ?? req.body.id
         const session = req.authSession!
         const organizationId = session.role === 'system_admin'
             ? Number(req.query.organizationId)
@@ -55,13 +55,14 @@ export const deleteOrganizationInvitesController = async (req: Request, res: Res
             throw new AppError('Organization id is required.', 400)
         }
 
-        await InvitationService.deleteInvitation({
-            id: invitationId,
+        const deletedInvitations = await InvitationService.deleteInvitation({
+            id: invitationIds,
             organizationId
         })
 
         return res.status(200).json({
-            message: 'Successfully deleted invitation.'
+            message: 'Successfully deleted invitation.',
+            deletedInvitations
         })
     } catch (error) {
         return handleControllererror(res, error)

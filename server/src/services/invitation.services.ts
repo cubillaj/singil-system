@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm"
+import { and, eq, inArray, sql } from "drizzle-orm"
 import { db } from "../db/db.js"
 import { organizationInvites, organizations, users } from "../db/schema.js"
 import { AppError } from "../utils/appError.js"
@@ -165,9 +165,10 @@ export const deleteInvitation = async (ids: unknown) => {
     }
 
     const {id, organizationId} = parsedIds.data
+    const invitationIds = [...new Set(id)]
 
-    const organizationInvite = await db.query.organizationInvites.findFirst({
-        where: and(eq(organizationInvites.id, id), eq(organizationInvites.organizationId, organizationId)),
+    const organizationInvite = await db.query.organizationInvites.findMany({
+        where: and(inArray(organizationInvites.id, invitationIds), eq(organizationInvites.organizationId, organizationId)),
         columns: {
             id: true,
             usedAt: true
@@ -181,22 +182,27 @@ export const deleteInvitation = async (ids: unknown) => {
         }
     })
 
-    if (!organizationInvite) throw new AppError('Organization invite is not found', 404)
+    if (organizationInvite.length === 0) throw new AppError('Organization invite is not found', 404)
 
-    if(organizationInvite.usedAt !== null && organizationInvite.organization.plan === 'free') {
+    if (organizationInvite.length !== invitationIds.length) {
+        throw new AppError('One or more invitations were not found.', 404)
+    }
+
+    const hasUsedFreePlanInvite = organizationInvite.some((invite) => invite.usedAt !== null && invite.organization.plan === 'free')
+    if(hasUsedFreePlanInvite) {
         throw new AppError('You cannot delete invitation that is already used in free plan.', 403)
     }
 
-    const [deletedInvitation] = await db.delete(organizationInvites)
+    const deletedInvitation = await db.delete(organizationInvites)
                                         .where(and(
-                                            eq(organizationInvites.id, id),
+                                            inArray(organizationInvites.id, invitationIds),
                                             eq(organizationInvites.organizationId, organizationId)
                                         ))
                                         .returning({
                                             id: organizationInvites.id
                                         })
     
-    if(!deletedInvitation) {
+    if(deletedInvitation.length === 0) {
         throw new AppError('Invitation not found.', 404)
     }
 

@@ -24,7 +24,10 @@ export const InvitationQuerySchema = z.object({
 })
 
 export const DeleteInvitationSchema = z.object({
-    id: z.coerce.number().int().positive(),
+    id: z.union([
+        z.coerce.number().int().positive(),
+        z.array(z.coerce.number().int().positive()).min(1, 'At least one invitation ID is required')
+    ]).transform((value) => Array.isArray(value) ? value : [value]),
     organizationId: z.coerce.number().int().positive()
 })
 

@@ -95,6 +95,13 @@ export const invitationApi = {
     const query = new URLSearchParams(params).toString()
     return apiRequest(`/api/invitation/${id}${query ? `?${query}` : ''}`, { method: 'DELETE' })
   },
+  bulkDelete: (ids, params = {}) => {
+    const query = new URLSearchParams(params).toString()
+    return apiRequest(`/api/invitation${query ? `?${query}` : ''}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ ids }),
+    })
+  },
 }
 
 export const clientApi = {
