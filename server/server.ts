@@ -21,6 +21,7 @@ import subscriptionRoutes from './src/routes/subscription.routes.js'
 import webhookRoutes from './src/routes/webhook.routes.js'
 import paymentRoutes from './src/routes/payment.routes.js'
 import dashboardRoutes from './src/routes/dashboard.routes.js'
+import { webhookRateLimiter } from './src/middleware/rateLiter.middleware.js'
 const app = express();
 
 const devOrigins = ['http://localhost:5173', 'http://localhost:5174']
@@ -31,7 +32,7 @@ app.use(cors({
   origin: process.env.NODE_ENV === 'production' ? process.env.CLIENT_URL : devOrigins,
   credentials: true
 }));
-app.use("/api/webhooks", webhookRoutes)
+app.use("/api/webhooks", webhookRateLimiter, webhookRoutes)
 app.use(express.json());
 app.use(cookieParser())
 app.set('trust proxy', 1)
