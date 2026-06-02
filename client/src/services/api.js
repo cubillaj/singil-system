@@ -5,7 +5,10 @@ async function parseResponse(response) {
   const data = contentType.includes('application/json') ? await response.json() : null
 
   if (!response.ok) {
-    const error = new Error(data?.message ?? data?.error ?? 'Request failed')
+    const fallbackMessage = response.status === 429
+      ? 'Too many requests. Please wait a moment and try again.'
+      : 'Request failed'
+    const error = new Error(data?.message ?? data?.error ?? fallbackMessage)
     error.status = response.status
     error.data = data
     throw error
@@ -143,7 +146,10 @@ export const invoiceApi = {
     if (!response.ok) {
       const contentType = response.headers.get('content-type') ?? ''
       const data = contentType.includes('application/json') ? await response.json() : null
-      throw new Error(data?.message ?? data?.error ?? 'Failed to export PDF')
+      const fallbackMessage = response.status === 429
+        ? 'Too many export requests. Please wait a moment and try again.'
+        : 'Failed to export PDF'
+      throw new Error(data?.message ?? data?.error ?? fallbackMessage)
     }
 
     const disposition = response.headers.get('content-disposition') ?? ''
