@@ -8,6 +8,7 @@ import { MobileCard, MobileList, MobileMeta } from '../components/MobileList'
 import { Notice } from '../components/Notice'
 import { PageHeader } from '../components/PageHeader'
 import { StatusPill } from '../components/StatusPill'
+import { useDebounce } from '../hooks/useDebounce'
 import { invitationApi } from '../services/api'
 import { formatDate } from '../utils/format'
 
@@ -34,6 +35,7 @@ export function InvitationsPage({ user, onNavigate }) {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
   const [selectedInvitationIds, setSelectedInvitationIds] = useState([])
   const [loading, setLoading] = useState(false)
+  const debouncedFilters = useDebounce(filters)
 
   const selectedCount = selectedInvitationIds.length
   const visibleInvitationIds = invitations.map((invitation) => invitation.id)
@@ -77,7 +79,7 @@ export function InvitationsPage({ user, onNavigate }) {
   useEffect(() => {
     loadInvitations()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page])
+  }, [page, debouncedFilters])
 
   const confirmDeleteInvitation = async () => {
     if (!inviteToDelete) return

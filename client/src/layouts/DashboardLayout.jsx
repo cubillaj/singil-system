@@ -1,4 +1,4 @@
-import { BriefcaseBusiness, Building2, CircleUser, CreditCard, FileText, LayoutDashboard, LogOut, MailPlus, Package, ReceiptText, Repeat, Settings, Users } from 'lucide-react'
+import { BriefcaseBusiness, Building2, CircleUser, CreditCard, FileText, LayoutDashboard, LogOut, MailPlus, Package, ReceiptText, Repeat, ScrollText, Settings, Users } from 'lucide-react'
 import { Button } from '../components/Button'
 import { getInitials, roleLabel } from '../utils/format'
 import logoImage from '../assets/singil-favicon-green.svg'
@@ -12,6 +12,7 @@ const navItems = [
   { id: 'recurring', label: 'Recurring', icon: Repeat, roles: ['admin', 'member', 'owner'] },
   { id: 'invitations', label: 'Invitations', icon: MailPlus, roles: ['system_admin', 'admin', 'owner'] },
   { id: 'organization', label: 'Organization', icon: Settings, roles: ['admin', 'owner'] },
+  { id: 'audit-logs', label: 'Audit Logs', icon: ScrollText, roles: ['owner'] },
   { id: 'subscription', label: 'Subscription', icon: CreditCard, roles: ['owner'] },
   { id: 'profile', label: 'Profile', icon: CircleUser, roles: ['system_admin', 'admin', 'member', 'owner'] },
 ]

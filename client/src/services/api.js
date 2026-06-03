@@ -204,3 +204,7 @@ export const subscriptionApi = {
     body: JSON.stringify(payload),
   }),
 }
+
+export const auditLogApi = {
+  list: (params = {}) => apiRequest(`/api/audit-logs?${new URLSearchParams(params)}`),
+}

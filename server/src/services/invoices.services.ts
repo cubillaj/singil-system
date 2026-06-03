@@ -314,27 +314,6 @@ export const updateInvoice = async (invoiceId: number, organizationId: number, d
         throw new AppError('No fields to update')
     }
 
-    // const updatedData = parsed.data
-
-    // if(Object.values(updatedData).every((value) => value === undefined)) {
-    //     throw new AppError('No fields to update.', 400)
-    // }
-
-    // const {
-    //     clientId,
-    //     invoiceNumber,
-    //     currency,
-    //     status,
-    //     notes,
-    //     issueDate,
-    //     dueDate,
-    //     amountPaid,
-    //     internalNotes,
-    //     footer,
-    //     pdfUrl,
-    //     items
-    // } = updatedData
-
     const [existingInvoice] = await db.select()
                                       .from(invoices)
                                       .where(and(

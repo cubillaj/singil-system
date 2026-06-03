@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { pgEnum, varchar, pgTable, serial, text, timestamp, uuid, boolean, integer, numeric, uniqueIndex, index} from "drizzle-orm/pg-core";
+import { pgEnum, varchar, pgTable, serial, text, timestamp, uuid, boolean, integer, numeric, uniqueIndex, index, jsonb} from "drizzle-orm/pg-core";
 
 export const planEnum = pgEnum('plan',['free', 'pro', 'business'])
 
@@ -63,6 +63,30 @@ const timestamps = {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull()
 } 
+
+export const auditLog = pgTable('audit_log', {
+  id: serial('id').primaryKey(),
+  organizationId: integer('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade'}),
+  userId: integer('user_id').references(() => users.id, { onDelete: 'set null'}),
+  action: varchar('action', { length: 100}).notNull(),
+  entityType: varchar('entity_type', { length: 100 }).notNull(),
+  entityId: integer('entity_id'),
+  metadata: jsonb('metadata'),
+  ipAddress: varchar('ip_address', { length: 45 }),
+  userAgent: text('user_agent'),
+  createdAt: timestamp('created_at').defaultNow().notNull()
+}, (table) => {
+  return {
+    auditLogOrganizationCreatedAtIdx: index("audit_log_organization_created_at_idx")
+      .on(table.organizationId, table.createdAt),
+    auditLogUserCreatedAtIdx: index("audit_log_user_created_at_idx")
+      .on(table.userId, table.createdAt),
+    auditLogEntityIdx: index("audit_log_entity_idx")
+      .on(table.entityType, table.entityId),
+  };
+})
 // organization (multi-tenacy)
 
 export const organizationSubscriptions = pgTable('organization_Subscriptions',{
@@ -464,7 +488,8 @@ export const organizationsRelations = relations(organizations, ({ one, many }) =
   invoices: many(invoices),
   payments: many(payments),
   subscriptionPayments: many(subscriptionPayments),
-  recurringInvoices: many(recurringInvoices)
+  recurringInvoices: many(recurringInvoices),
+  auditLogs: many(auditLog)
 }))
 
 export const userRelations = relations(users, ({ one, many }) => ({
@@ -472,7 +497,19 @@ export const userRelations = relations(users, ({ one, many }) => ({
     fields: [users.organizationId],
     references: [organizations.id]
   }),
-  createdInvites: many(organizationInvites)
+  createdInvites: many(organizationInvites),
+  auditLogs: many(auditLog)
+}))
+
+export const auditLogRelations = relations(auditLog, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [auditLog.organizationId],
+    references: [organizations.id]
+  }),
+  user: one(users, {
+    fields: [auditLog.userId],
+    references: [users.id]
+  })
 }))
 
 export const organizationInvitesRelations = relations(organizationInvites, ({ one }) => ({
@@ -591,3 +628,5 @@ export type RecurringInvoice = typeof recurringInvoices.$inferSelect;
 export type NewRecurringInvoice = typeof recurringInvoices.$inferInsert;
 export type RecurringInvoiceItem = typeof recurringInvoiceItems.$inferSelect;
 export type NewRecurringInvoiceItem = typeof recurringInvoiceItems.$inferInsert;
+export type AuditLog = typeof auditLog.$inferSelect;
+export type NewAuditLog = typeof auditLog.$inferInsert;

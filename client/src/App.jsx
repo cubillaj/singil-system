@@ -2,6 +2,7 @@ import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 're
 import { DashboardLayout } from './layouts/DashboardLayout'
 import { useAuth } from './hooks/useAuth'
 import { AuthPage } from './pages/AuthPage'
+import { AuditLogsPage } from './pages/AuditLogsPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { ClientFormPage, ClientsPage } from './pages/ClientsPage'
 import { InvitationCreatePage, InvitationsPage } from './pages/InvitationsPage'
@@ -44,6 +45,7 @@ function canAccessPage(role, page) {
     invitations: ['system_admin', 'admin', 'owner'],
     'invitation-new': ['system_admin', 'admin', 'owner'],
     organization: ['admin', 'owner'],
+    'audit-logs': ['owner'],
     subscription: ['owner'],
     profile: ['system_admin', 'admin', 'member', 'owner'],
     'profile-edit': ['system_admin', 'admin', 'member', 'owner'],
@@ -78,6 +80,7 @@ function pageToPath(page, params = {}) {
     invitations: '/dashboard/invitations',
     'invitation-new': '/dashboard/invitations/new',
     organization: '/dashboard/organization',
+    'audit-logs': '/dashboard/audit-logs',
     subscription: '/dashboard/subscription',
     profile: '/dashboard/profile',
     'profile-edit': '/dashboard/profile/edit',
@@ -111,6 +114,7 @@ function activePageFromPath(pathname) {
   if (pathname === '/dashboard/invitations/new') return 'invitation-new'
   if (pathname === '/dashboard/invitations') return 'invitations'
   if (pathname === '/dashboard/organization') return 'organization'
+  if (pathname === '/dashboard/audit-logs') return 'audit-logs'
   if (pathname === '/dashboard/subscription') return 'subscription'
   if (pathname === '/dashboard/profile/edit') return 'profile-edit'
   if (pathname === '/dashboard/profile/password') return 'profile-password'
@@ -233,6 +237,7 @@ function App() {
         <Route path="/dashboard/invitations" element={<ProtectedPage user={auth.user} page="invitations"><InvitationsPage user={auth.user} onNavigate={navigateToPage} /></ProtectedPage>} />
         <Route path="/dashboard/invitations/new" element={<ProtectedPage user={auth.user} page="invitation-new"><InvitationCreatePage user={auth.user} onNavigate={navigateToPage} /></ProtectedPage>} />
         <Route path="/dashboard/organization" element={<ProtectedPage user={auth.user} page="organization"><OrganizationPage user={auth.user} onUpdated={auth.refresh} /></ProtectedPage>} />
+        <Route path="/dashboard/audit-logs" element={<ProtectedPage user={auth.user} page="audit-logs"><AuditLogsPage /></ProtectedPage>} />
         <Route path="/dashboard/subscription" element={<ProtectedPage user={auth.user} page="subscription"><SubscriptionPage user={auth.user} onUpdated={auth.refresh} /></ProtectedPage>} />
         <Route path="/dashboard/profile" element={<ProtectedPage user={auth.user} page="profile"><ProfilePage onNavigate={navigateToPage} /></ProtectedPage>} />
         <Route path="/dashboard/profile/edit" element={<ProtectedPage user={auth.user} page="profile-edit"><ProfileEditPage onNavigate={navigateToPage} onUpdated={auth.refresh} /></ProtectedPage>} />
