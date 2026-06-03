@@ -68,6 +68,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
                   organizationId,
                   ...createDefaultSubscription
                 })
+                .returning({ id: organizationSubscriptions.id })
 
         subscriptionId = subscription.id
       } else {
