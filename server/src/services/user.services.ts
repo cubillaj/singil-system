@@ -1,10 +1,10 @@
 import bcrypt from 'bcrypt'
-import { UpdateUserSchema, UserChangePasswordSchema } from '../validation/user.validation.js'
+import { UpdateUserSchema, UserChangePasswordSchema, UserQuerySchema } from '../validation/user.validation.js'
 import { AppError } from '../utils/appError.js'
 import { getFirstZodMessage } from '../utils/zodErrors.js'
 import { db } from '../db/db.js'
-import { users } from '../db/schema.js'
-import { eq } from 'drizzle-orm'
+import { clients, users } from '../db/schema.js'
+import { and, asc, desc, eq, gte, ilike, lte, ne, or, sql, SQL } from 'drizzle-orm'
 
 export const changePassword = async (data: unknown) => {
     const parsed = UserChangePasswordSchema.safeParse(data)
@@ -111,4 +111,96 @@ export const userInfo = async (userId: number) => {
     }
 
     return user
+}
+
+export const getAllUsers = async (userId: number, query: unknown) => {
+    const parsed = UserQuerySchema.safeParse(query)
+
+    if(!parsed.success) {
+        const errors = parsed.error.flatten().fieldErrors
+        const msg = Object.values(errors).flat()[0] || 'Invalid data'
+
+        throw new AppError(msg, 400)
+    }
+
+    const [user] = await db.select(
+                            {role: users.role}
+                            )
+                            .from(users)
+                            .where(and(
+                                eq(users.id, userId),
+                                eq(users.role, 'system_admin')
+                            ))
+
+    if(!user) {
+        throw new AppError('User not found')
+    }
+
+    const {search, page, limit, createdFrom, createdTo, sortBy, sortOrder } = parsed.data
+
+    const filters: SQL[] = [
+        ne(users.role, 'system_admin')
+    ]
+
+    if (search) {
+        const searchFilter = or(
+            ilike(users.email, `%${search}%`)
+        )
+
+        if(searchFilter) {
+            filters.push(searchFilter)
+        }
+    }
+
+    if(createdFrom) filters.push(gte(users.createdAt, createdFrom))
+    if (createdTo) filters.push(lte(users.createdAt, createdTo))
+    
+    const sortColumn = {
+        createdAt: users.createdAt
+    }[sortBy]
+
+    const orderBy = 
+                sortOrder === 'asc'
+                    ? asc(sortColumn)
+                    : desc(sortColumn)
+
+    const offSet = (page - 1) * limit
+
+    const [{count}] = await db.select({ count: sql<number>`count(*)`})
+                                .from(users)
+                                .where(and(...filters))
+
+    const total = Number(count)
+    const totalPages = Math.ceil(total / limit)
+
+    const allUsers = await db.query.users.findMany({
+        where: and(...filters),
+        columns: {
+            id: true,
+            email: true,
+        },
+        with: {
+            organization: {
+                columns: {
+                    name: true,
+                    plan: true,
+                }
+            }
+        },
+        orderBy,
+        limit,
+        offset: offSet
+    })
+
+    return {
+        allUsers,
+        pagination: {
+            page,
+            limit,
+            total,
+            totalPages,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1
+        }
+    }
 }

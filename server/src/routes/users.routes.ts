@@ -1,12 +1,13 @@
 import express from 'express'
-import { requireAuth } from '../middleware/auth.middleware.js'
-import { changePasswordController, updateUserInfoController, userInfoController } from '../controller/users.controller.js'
+import { requireAuth, requireRole } from '../middleware/auth.middleware.js'
+import { changePasswordController, getAllUsersController, updateUserInfoController, userInfoController } from '../controller/users.controller.js'
 import { upload } from '../middleware/upload.middleware.js'
 import { readRateLimiter, sensitiveActionRateLimiter, uploadRateLimiter } from '../middleware/rateLiter.middleware.js'
 import { auditLogMiddleware } from '../middleware/audit-log.middleware.js'
 
 const router = express.Router()
 
+router.get('/', requireRole(['system_admin']), getAllUsersController)
 router.put('/', uploadRateLimiter, requireAuth, auditLogMiddleware({
     action: 'user.update_profile',
     entityType: 'user',

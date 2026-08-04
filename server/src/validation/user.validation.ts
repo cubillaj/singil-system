@@ -26,6 +26,21 @@ export const UserSchema = z.object({
     emailVerified: z.boolean().default(false)
 })
 
+export const UserQuerySchema = z.object({
+    search: z.string().optional(),
+    status: z.enum(['active', 'inactive', 'inActive']).optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).max(10).default(10),
+    sortBy: z.
+        enum(['createdAt'])
+        .default('createdAt'),
+    sortOrder: z.
+        enum(['asc', 'desc'])
+        .default('desc'),
+    createdFrom: z.coerce.date().optional(),
+    createdTo: z.coerce.date().optional()
+})
+
 export const UpdateUserSchema = UserSchema.pick({
     name: true,
     lastName: true,
@@ -65,3 +80,4 @@ export const UserChangePasswordSchema = z.object({
 export type User = z.infer<typeof UserSchema>
 export type UserChangePassword = z.infer<typeof UserChangePasswordSchema>
 export type UpdateUser = z.infer<typeof UpdateUserSchema>
+export type UserQuery = z.infer<typeof UserQuerySchema>

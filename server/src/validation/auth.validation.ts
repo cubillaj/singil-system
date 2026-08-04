@@ -12,7 +12,7 @@ export const RegisterSchema = z.object({
   organizationName: z.string({ error: "Organization name is required" })
     .min(1, "Organization name is required.")
     .max(100, "Max letter is only 100").optional(),
-  email: z.email({ error: "Invalid format" })
+  email: z.email({ error: "Invalid Email format" })
     .transform((value) => value.toLocaleLowerCase()),
   password: z.string({ error: "Password is required" })
     .min(8, "Password must be at least 8 characters")
@@ -38,7 +38,7 @@ export const RegisterSchema = z.object({
 });
 
 export const LoginSchema = z.object({
-  email: z.email({ error: "Invalid format" })
+  email: z.email({ error: "Invalid Email format" })
     .transform((value) => value.toLocaleLowerCase()),
   password: z.string({ error: "Password is required" })
     .min(1, "Password is required"),

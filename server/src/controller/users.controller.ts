@@ -2,6 +2,25 @@ import * as UsersServices from '../services/user.services.js'
 import { Request, Response } from 'express'
 import { handleControllererror } from '../utils/handleController.js'
 import { uploadImageToCloudinary } from '../middleware/upload.middleware.js'
+
+export const getAllUsersController = async (req: Request, res: Response) => {
+    try {
+        const session = req.authSession!
+
+        const id = session.userId
+
+        if (id === null) return res.status(400).json({ message: 'User id is required'})
+
+        const users = await UsersServices.getAllUsers(id, req.query)
+
+        return res.status(200).json({
+            ...users
+        })
+    } catch (error) {
+        return handleControllererror(res, error)
+    }
+}
+
 export const changePasswordController = async (req: Request, res: Response) => {
     try {
          const session = req.authSession!

@@ -297,10 +297,10 @@ function AuthFormPage({ mode, onLogin, onRegister }) {
           {mode === 'login' ? (
             <form onSubmit={submitLogin} className="grid gap-4">
               <Field label="Email">
-                <input className={inputClassName()} value={loginForm.email} onChange={(event) => setLoginForm({ ...loginForm, email: event.target.value })} />
+                <input required={true} className={inputClassName()} value={loginForm.email} onChange={(event) => setLoginForm({ ...loginForm, email: event.target.value })} />
               </Field>
               <Field label="Password">
-                <input className={inputClassName()} type="password" value={loginForm.password} onChange={(event) => setLoginForm({ ...loginForm, password: event.target.value })} />
+                <input required={true} className={inputClassName()} type="password" value={loginForm.password} onChange={(event) => setLoginForm({ ...loginForm, password: event.target.value })} />
               </Field>
               <Button type="submit" disabled={submitting}>{submitting ? 'Signing in...' : 'Sign in'}</Button>
             </form>
@@ -308,14 +308,14 @@ function AuthFormPage({ mode, onLogin, onRegister }) {
             <form onSubmit={submitRegister} className="grid gap-4">
               <div className="grid grid-cols-2 gap-3">
                 <Field label="First name">
-                  <input className={inputClassName()} value={registerForm.name} onChange={(event) => setRegisterForm({ ...registerForm, name: event.target.value })} />
+                  <input required={true} className={inputClassName()} value={registerForm.name} onChange={(event) => setRegisterForm({ ...registerForm, name: event.target.value })} />
                 </Field>
                 <Field label="Last name">
-                  <input className={inputClassName()} value={registerForm.lastName} onChange={(event) => setRegisterForm({ ...registerForm, lastName: event.target.value })} />
+                  <input required={true} className={inputClassName()} value={registerForm.lastName} onChange={(event) => setRegisterForm({ ...registerForm, lastName: event.target.value })} />
                 </Field>
               </div>
               <Field label="Account type">
-                <select className={inputClassName()} value={registerForm.role} onChange={(event) => setRegisterForm({ ...registerForm, role: event.target.value })}>
+                <select required={true} className={inputClassName()} value={registerForm.role} onChange={(event) => setRegisterForm({ ...registerForm, role: event.target.value })}>
                   <option value="owner">Owner</option>
                   <option value="member">Invited member</option>
                   <option value="admin">Invited admin</option>
@@ -323,18 +323,18 @@ function AuthFormPage({ mode, onLogin, onRegister }) {
               </Field>
               {registerForm.role === 'owner' ? (
                 <Field label="Organization name">
-                  <input className={inputClassName()} value={registerForm.organizationName} onChange={(event) => setRegisterForm({ ...registerForm, organizationName: event.target.value })} />
+                  <input required={true} className={inputClassName()} value={registerForm.organizationName} onChange={(event) => setRegisterForm({ ...registerForm, organizationName: event.target.value })} />
                 </Field>
               ) : (
                 <Field label="Invitation code">
-                  <input className={inputClassName()} value={registerForm.code} onChange={(event) => setRegisterForm({ ...registerForm, code: event.target.value })} />
+                  <input required={true} className={inputClassName()} value={registerForm.code} onChange={(event) => setRegisterForm({ ...registerForm, code: event.target.value })} />
                 </Field>
               )}
               <Field label="Email">
-                <input className={inputClassName()} value={registerForm.email} onChange={(event) => setRegisterForm({ ...registerForm, email: event.target.value })} />
+                <input required={true} className={inputClassName()} value={registerForm.email} onChange={(event) => setRegisterForm({ ...registerForm, email: event.target.value })} />
               </Field>
               <Field label="Password">
-                <input className={inputClassName()} type="password" value={registerForm.password} onChange={(event) => setRegisterForm({ ...registerForm, password: event.target.value })} />
+                <input required={true} className={inputClassName()} type="password" value={registerForm.password} onChange={(event) => setRegisterForm({ ...registerForm, password: event.target.value })} />
               </Field>
               <Button type="submit" disabled={submitting}>{submitting ? 'Creating account...' : 'Create account'}</Button>
             </form>
