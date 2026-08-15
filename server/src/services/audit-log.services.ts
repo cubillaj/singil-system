@@ -4,6 +4,7 @@ import { auditLog } from "../db/schema.js";
 import { AppError } from "../utils/appError.js";
 import { AuditLogQuerySchema, CreateAuditLogSchema, type CreateAuditLogInput } from "../validation/audit-log.validation.js";
 import { getFirstZodMessage } from "../utils/zodErrors.js";
+import { getOrganizationEntitlements } from "./subscription.services.js";
 
 export const createAuditLog = async (data: CreateAuditLogInput) => {
   const parsed = CreateAuditLogSchema.safeParse(data);
@@ -24,6 +25,12 @@ export const createAuditLog = async (data: CreateAuditLogInput) => {
 };
 
 export const getAuditLogs = async (organizationId: number, query: unknown) => {
+  const entitlements = await getOrganizationEntitlements(organizationId);
+
+  if (!entitlements.auditLogs) {
+    throw new AppError("Audit logs require the Business plan.", 403);
+  }
+
   const parsed = AuditLogQuerySchema.safeParse(query);
 
   if (!parsed.success) {

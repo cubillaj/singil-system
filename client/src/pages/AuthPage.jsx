@@ -8,6 +8,7 @@ import { Notice } from '../components/Notice'
 import logoImage from '../assets/singil-favicon-green.svg'
 import logoImageLogin from '../assets/singil_login_wave.svg'
 import registerImage from '../assets/singil_register_workspace.svg'
+import { usePlanCatalog } from '../hooks/usePlanCatalog'
 const initialLogin = { email: '', password: '' }
 const initialRegister = {
   name: '',
@@ -23,12 +24,6 @@ const features = [
   { title: 'Clients', text: 'Keep customer profiles, contact details, currencies, and notes ready for billing.', icon: Users },
   { title: 'Products', text: 'Save services, rates, units, and tax values so invoice work starts from clean data.', icon: FileText },
   { title: 'Teams', text: 'Invite owners, admins, and members with access that matches their work.', icon: ShieldCheck },
-]
-
-const plans = [
-  { name: 'Free', price: 'PHP 0', text: 'For solo testing and early setup.', items: ['Basic clients', 'Products list', 'Team invitations'] },
-  { name: 'Pro', price: 'PHP 75', text: 'For active freelancers and small teams.', items: ['More invoice workflows', 'Payment tracking', 'Priority workspace tools'] },
-  { name: 'Business', price: 'PHP 150', text: 'For teams that need stronger controls.', items: ['Advanced team access', 'Recurring billing', 'Business reporting'] },
 ]
 
 function PublicNav() {
@@ -104,6 +99,8 @@ function AboutSection() {
 }
 
 function SubscriptionSection({ compact = false }) {
+  const { plans, loading, error } = usePlanCatalog()
+
   return (
     <section className="border-b border-line bg-surface px-4 py-16 sm:px-6">
       <div className="mx-auto max-w-7xl">
@@ -113,18 +110,20 @@ function SubscriptionSection({ compact = false }) {
             Start with a simple workspace, then upgrade when your billing process needs more automation and team control.
           </p>
         </div>
+        {loading ? <p className="text-sm text-muted">Loading plans...</p> : null}
+        {error ? <Notice>{error}</Notice> : null}
         <div className="grid gap-4 lg:grid-cols-3">
           {plans.map((plan) => (
             <article key={plan.name} className="rounded-md border border-line bg-panel p-5">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h3 className="text-lg font-semibold">{plan.name}</h3>
-                  <p className="mt-1 text-sm text-muted">{plan.text}</p>
+                  <p className="mt-1 text-sm text-muted">{plan.description}</p>
                 </div>
-                <p className="text-right text-sm font-semibold text-accent">{plan.price}</p>
+                <p className="text-right text-sm font-semibold text-accent">{plan.priceLabel}</p>
               </div>
               <ul className="mt-5 grid gap-3 text-sm text-muted">
-                {plan.items.map((item) => (
+                {plan.features.map((item) => (
                   <li key={item} className="flex items-center gap-2">
                     <CheckCircle2 className="shrink-0 text-accent" size={17} />
                     <span>{item}</span>

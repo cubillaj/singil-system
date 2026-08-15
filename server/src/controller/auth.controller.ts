@@ -8,7 +8,7 @@ import { createAuthSession, destroyAuthSession } from "../services/authSession.j
 import { LoginSchema, RegisterSchema } from "../validation/auth.validation.js";
 import { createSlug } from "../utils/slug.js";
 import { getFirstZodMessage } from "../utils/zodErrors.js";
-import { expireOrganizationSubscription } from "../services/subscription.services.js";
+import { getEffectiveSubscription } from "../services/subscription.services.js";
 const saltRounds = 12;
 
 function sanitizeUser(user: User) {
@@ -217,9 +217,9 @@ export const me = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const session = req.authSession!;
 
-    if (session.organizationId !== null) {
-      await expireOrganizationSubscription(session.organizationId);
-    }
+    const effectiveSubscription = session.organizationId === null
+      ? null
+      : await getEffectiveSubscription(session.organizationId);
 
     const user = await db.query.users.findFirst({
       where: eq(users.id, session.userId),
@@ -259,7 +259,15 @@ export const me = async (req: Request, res: Response, next: NextFunction) => {
     }
 
     return res.status(200).json({
-      user
+      user: user.organization && effectiveSubscription
+        ? {
+            ...user,
+            organization: {
+              ...user.organization,
+              effectivePlan: effectiveSubscription.effectivePlan,
+            },
+          }
+        : user
     });
   } catch (error) {
     next(error);

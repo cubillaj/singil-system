@@ -1,6 +1,11 @@
 import * as SubscriptionServices from '../services/paymongo.services.js'
 import { Request, Response } from 'express'
 import { handleControllererror } from '../utils/handleController.js'
+import { getPlanCatalog } from '../services/subscription.services.js'
+
+export const getSubscriptionPlansController = (_req: Request, res: Response) => {
+    return res.status(200).json({ plans: getPlanCatalog() })
+}
 
 export const subscriptionCheckoutController = async (req: Request, res: Response) => {
     try {

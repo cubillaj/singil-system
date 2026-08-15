@@ -1,10 +1,10 @@
-import { and, eq, inArray, sql } from "drizzle-orm"
+import { and, eq, gt, inArray, isNull, sql } from "drizzle-orm"
 import { db } from "../db/db.js"
 import { organizationInvites, organizations, users } from "../db/schema.js"
 import { AppError } from "../utils/appError.js"
 import { DeleteInvitationSchema, GetInvitationSchema, InvitationQuerySchema, InvitationSchema } from "../validation/invitation.validation.js"
 import { getFirstZodMessage } from "../utils/zodErrors.js"
-import { expireOrganizationSubscription } from "./subscription.services.js"
+import { getOrganizationEntitlements } from "./subscription.services.js"
 import { invitationFilters } from "../utils/invitation.utils.js"
 
 export const getInvitation = async (organizationId: unknown, query: unknown) => {
@@ -117,25 +117,24 @@ export const createOrganizationInvitation = async (userId: number, userRole: str
     orgId = existingUser.organizationId
     }
 
-    await expireOrganizationSubscription(orgId)
+    const entitlements = await getOrganizationEntitlements(orgId)
 
-    const [organizationPlan] = await db.select({
-        plan: organizations.plan
-    })
-        .from(organizations)
-        .where(eq(organizations.id, orgId))
+    if (entitlements.maxMembers !== null) {
+        const [[{ count: memberCount }], [{ count: pendingInviteCount }]] = await Promise.all([
+            db.select({ count: sql<number>`count(*)` })
+                .from(users)
+                .where(eq(users.organizationId, orgId)),
+            db.select({ count: sql<number>`count(*)` })
+                .from(organizationInvites)
+                .where(and(
+                    eq(organizationInvites.organizationId, orgId),
+                    isNull(organizationInvites.usedAt),
+                    gt(organizationInvites.expiresAt, new Date())
+                ))
+        ])
 
-    if (!organizationPlan) {
-        throw new AppError('Organization is not found', 404)
-    }
-
-    if (organizationPlan.plan === 'free') {
-        const [{ count }] = await db.select({ count: sql<number>`count(*)` })
-            .from(organizationInvites)
-            .where(eq(organizationInvites.organizationId, orgId))
-
-        if (Number(count) >= 3) {
-            throw new AppError('Free plan organizations can only create 3 invitations.', 403)
+        if (Number(memberCount) + Number(pendingInviteCount) >= entitlements.maxMembers) {
+            throw new AppError(`Your ${entitlements.effectivePlan} plan allows up to ${entitlements.maxMembers} organization members, including pending invitations.`, 403)
         }
     }
 

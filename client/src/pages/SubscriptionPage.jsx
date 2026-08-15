@@ -5,30 +5,7 @@ import { Notice } from '../components/Notice'
 import { PageHeader } from '../components/PageHeader'
 import { subscriptionApi } from '../services/api'
 import { formatDate } from '../utils/format'
-
-const plans = [
-  {
-    id: 'free',
-    name: 'Free',
-    price: 'PHP 0',
-    description: 'For testing the workspace and setting up the basics.',
-    features: ['Client records', 'Product catalog', 'Team invitations'],
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    price: 'PHP 75',
-    description: 'For teams that need smoother invoice and payment operations.',
-    features: ['Recurring invoice tools', 'Payment tracking', 'Workspace billing controls'],
-  },
-  {
-    id: 'business',
-    name: 'Business',
-    price: 'PHP 150',
-    description: 'For growing teams that need more room and stronger billing workflows.',
-    features: ['Advanced operations', 'Priority billing workflows', 'Business-ready controls'],
-  },
-]
+import { usePlanCatalog } from '../hooks/usePlanCatalog'
 
 const planRank = {
   free: 0,
@@ -45,17 +22,18 @@ function planButtonLabel({ isCurrent, isFree, isDowngrade, isLoading, planName }
 }
 
 export function SubscriptionPage({ user, onUpdated }) {
+  const { plans, loading: plansLoading, error: plansError } = usePlanCatalog()
   const [loadingPlan, setLoadingPlan] = useState('')
   const [error, setError] = useState('')
 
   const subscription = user?.organization?.subscription
-  const currentPlan = subscription?.plan ?? user?.organization?.plan ?? 'free'
+  const currentPlan = user?.organization?.effectivePlan ?? subscription?.plan ?? user?.organization?.plan ?? 'free'
   const currentStatus = subscription?.status ?? 'active'
   const hasActiveBillingPeriod = currentPlan !== 'free' && currentStatus === 'active'
 
   const currentPlanData = useMemo(
-    () => plans.find((plan) => plan.id === currentPlan) ?? plans[0],
-    [currentPlan],
+    () => plans.find((plan) => plan.id === currentPlan),
+    [currentPlan, plans],
   )
 
   const startCheckout = async (plan) => {
@@ -101,7 +79,7 @@ export function SubscriptionPage({ user, onUpdated }) {
               <Sparkles size={18} className="text-accent" />
               <p className="text-sm font-semibold text-ink">Current plan</p>
             </div>
-            <h2 className="mt-2 text-2xl font-semibold text-ink">{currentPlanData.name}</h2>
+            <h2 className="mt-2 text-2xl font-semibold text-ink">{currentPlanData?.name ?? currentPlan}</h2>
             <p className="mt-1 text-sm text-muted">
               Status: <span className="capitalize text-ink">{currentStatus}</span>
             </p>
@@ -120,6 +98,8 @@ export function SubscriptionPage({ user, onUpdated }) {
         </div>
 
         <Notice>{error}</Notice>
+        <Notice>{plansError}</Notice>
+        {plansLoading ? <p className="text-sm text-muted">Loading plans...</p> : null}
 
         <div className="grid gap-4 xl:grid-cols-3">
           {plans.map((plan) => {
@@ -135,7 +115,7 @@ export function SubscriptionPage({ user, onUpdated }) {
                     <h3 className="text-lg font-semibold text-ink">{plan.name}</h3>
                     <p className="mt-1 text-sm leading-6 text-muted">{plan.description}</p>
                   </div>
-                  <p className="shrink-0 text-right text-sm font-semibold text-accent">{plan.price}</p>
+                  <p className="shrink-0 text-right text-sm font-semibold text-accent">{plan.priceLabel}</p>
                 </div>
 
                 <ul className="mt-5 grid gap-3 text-sm text-muted">

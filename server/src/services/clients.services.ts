@@ -1,11 +1,11 @@
 import { and, eq, sql } from "drizzle-orm"
 import { db } from "../db/db.js"
-import { clients, invoices, organizations, recurringInvoices } from "../db/schema.js"
+import { clients, invoices, recurringInvoices } from "../db/schema.js"
 import { AppError } from "../utils/appError.js"
 import { getFirstZodMessage } from "../utils/zodErrors.js"
 import { CreateClientSchema, DeleteClientSchema, GetSingleClientSchena, UpdateClientSchema } from "../validation/clients.validation.js"
 import { clientsFilter } from "../utils/clients.utils.js"
-import { expireOrganizationSubscription } from "./subscription.services.js"
+import { getOrganizationEntitlements } from "./subscription.services.js"
 
 export const createClient = async (data: unknown) => {
     const parsed = CreateClientSchema.safeParse(data)
@@ -20,24 +20,16 @@ export const createClient = async (data: unknown) => {
         addressLine2,city,state,postalCode,country,notes
      } = parsed.data
 
-     await expireOrganizationSubscription(organizationId)
-
-     const [organization] = await db.select({
-        plan: organizations.plan
-     })
-     .from(organizations)
-     .where(eq(organizations.id, organizationId))
-
-     if(!organization) throw new AppError('Organization is not found', 404)
+     const entitlements = await getOrganizationEntitlements(organizationId)
     
-    if(organization.plan === 'free') {
+    if(entitlements.maxClients !== null) {
         const [{count}] = await db.select({ count: sql<number>`count(*)`})
                                     .from(clients)
                                     .where(eq(clients.organizationId, organizationId))
 
 
-        if (Number(count) >= 3) {
-            throw new AppError('You can only create 3 clients for free plan.', 400)
+        if (Number(count) >= entitlements.maxClients) {
+            throw new AppError(`Your ${entitlements.effectivePlan} plan allows up to ${entitlements.maxClients} clients.`, 403)
         }                
     }
 

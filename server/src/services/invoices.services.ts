@@ -1,10 +1,11 @@
-import { and, eq } from "drizzle-orm"
+import { and, eq, gte, sql } from "drizzle-orm"
 import { db } from "../db/db.js"
 import { clients, invoiceItems, invoices } from "../db/schema.js"
 import { AppError } from "../utils/appError.js"
 import { CreateInvoiceSchema, DeleteInvoiceSchema, GetSingleInvoiceSchema, UpdateInvoiceSchema, type CreateInvoice } from "../validation/invoices.validation.js"
 import { getFirstZodMessage } from "../utils/zodErrors.js"
 import { invoiceFilter } from "../utils/invoice.utils.js"
+import { getOrganizationEntitlements } from "./subscription.services.js"
 
 
 
@@ -71,6 +72,25 @@ export const createInvoice = async (ids: IDS, data: unknown) => {
     }
 
     const { organizationId, userId } = ids
+
+    const entitlements = await getOrganizationEntitlements(organizationId)
+
+    if (entitlements.maxMonthlyInvoices !== null) {
+        const monthStart = new Date()
+        monthStart.setUTCDate(1)
+        monthStart.setUTCHours(0, 0, 0, 0)
+
+        const [{ count }] = await db.select({ count: sql<number>`count(*)` })
+            .from(invoices)
+            .where(and(
+                eq(invoices.organizationId, organizationId),
+                gte(invoices.createdAt, monthStart)
+            ))
+
+        if (Number(count) >= entitlements.maxMonthlyInvoices) {
+            throw new AppError(`Your ${entitlements.effectivePlan} plan allows up to ${entitlements.maxMonthlyInvoices} invoices per month.`, 403)
+        }
+    }
 
     const {
         dueDate,
