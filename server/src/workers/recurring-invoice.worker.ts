@@ -2,6 +2,7 @@ import "dotenv/config";
 import { Worker } from "bullmq";
 import { redisConnection } from "../queues/redisConnection.js";
 import { generateDueRecurringInvoices } from "../services/recurring-invoices.services.js";
+import { expireDueSubscriptions } from "../services/subscription.services.js";
 
 const worker = new Worker(
     "recurring-invoices",
@@ -11,6 +12,14 @@ const worker = new Worker(
 
             return {
                 generated: invoices.length
+            }
+        }
+
+        if (job.name === "expire-due-subscriptions") {
+            const organizationIds = await expireDueSubscriptions()
+
+            return {
+                expired: organizationIds.length
             }
         }
     },

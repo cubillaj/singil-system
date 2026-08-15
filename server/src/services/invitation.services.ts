@@ -4,6 +4,7 @@ import { organizationInvites, organizations, users } from "../db/schema.js"
 import { AppError } from "../utils/appError.js"
 import { DeleteInvitationSchema, GetInvitationSchema, InvitationQuerySchema, InvitationSchema } from "../validation/invitation.validation.js"
 import { getFirstZodMessage } from "../utils/zodErrors.js"
+import { expireOrganizationSubscription } from "./subscription.services.js"
 import { invitationFilters } from "../utils/invitation.utils.js"
 
 export const getInvitation = async (organizationId: unknown, query: unknown) => {
@@ -115,6 +116,8 @@ export const createOrganizationInvitation = async (userId: number, userRole: str
 
     orgId = existingUser.organizationId
     }
+
+    await expireOrganizationSubscription(orgId)
 
     const [organizationPlan] = await db.select({
         plan: organizations.plan

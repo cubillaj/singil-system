@@ -1,4 +1,4 @@
-import { BriefcaseBusiness, Building2, CircleUser, CreditCard, FileText, LayoutDashboard, LogOut, MailPlus, Package, ReceiptText, Repeat, ScrollText, Settings, Users } from 'lucide-react'
+import { BriefcaseBusiness, Building2, CircleUser, CreditCard, FileText, LayoutDashboard, LogOut, MailPlus, Package, ReceiptText, Repeat, ScrollText, Settings, Sparkles, Users } from 'lucide-react'
 import { Button } from '../components/Button'
 import { getInitials, roleLabel } from '../utils/format'
 import logoImage from '../assets/singil-favicon-green.svg'
@@ -31,10 +31,13 @@ function rootPage(page) {
 export function DashboardLayout({ user, activePage, onNavigate, onLogout, children }) {
   const visibleNavItems = navItems.filter((item) => item.roles.includes(user?.role))
   const selectedPage = rootPage(activePage)
+  const currentPlan = user?.organization?.subscription?.plan ?? user?.organization?.plan ?? 'free'
+  const isFreePlan = currentPlan === 'free'
+  const canManageSubscription = user?.role === 'owner'
 
   return (
     <div className="min-h-screen bg-surface text-ink">
-      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-line bg-panel lg:block">
+      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-line bg-panel lg:flex">
         <div className="flex h-16 items-center gap-2 border-b border-line px-5">
           <img src={logoImage} width={36} height={36} />
           <div>
@@ -42,7 +45,7 @@ export function DashboardLayout({ user, activePage, onNavigate, onLogout, childr
             <p className="text-xs text-muted">Billing workspace</p>
           </div>
         </div>
-        <nav className="grid gap-1 p-3">
+        <nav className="grid flex-1 content-start gap-1 overflow-y-auto p-3">
           {visibleNavItems.map((item) => {
             const Icon = item.icon
             const active = selectedPage === item.id
@@ -62,6 +65,28 @@ export function DashboardLayout({ user, activePage, onNavigate, onLogout, childr
             )
           })}
         </nav>
+        {isFreePlan ? (
+          <div className="m-3 mt-0 rounded-lg border border-accent/25 bg-accent/5 p-4">
+            <div className="flex items-center gap-2 text-accent">
+              <Sparkles size={17} />
+              <p className="text-sm font-semibold">Free plan</p>
+            </div>
+            <p className="mt-2 text-xs leading-5 text-muted">
+              Your organization is using the Free plan with limited clients, products, and invitations.
+            </p>
+            {canManageSubscription ? (
+              <Button
+                type="button"
+                className="mt-3 w-full"
+                onClick={() => onNavigate('subscription')}
+              >
+                Upgrade plan
+              </Button>
+            ) : (
+              <p className="mt-3 text-xs font-medium text-ink">Ask your organization owner to upgrade.</p>
+            )}
+          </div>
+        ) : null}
       </aside>
 
       <div className="lg:pl-64">
@@ -99,6 +124,26 @@ export function DashboardLayout({ user, activePage, onNavigate, onLogout, childr
             </Button>
           </div>
         </header>
+        {isFreePlan ? (
+          <div className="flex items-center justify-between gap-3 border-b border-accent/20 bg-accent/5 px-4 py-2.5 lg:hidden">
+            <div className="flex min-w-0 items-center gap-2">
+              <Sparkles size={16} className="shrink-0 text-accent" />
+              <p className="truncate text-xs text-muted">
+                <span className="font-semibold text-ink">Free plan</span>
+                {' · '}Limited clients, products, and invitations
+              </p>
+            </div>
+            {canManageSubscription ? (
+              <button
+                type="button"
+                onClick={() => onNavigate('subscription')}
+                className="shrink-0 text-xs font-semibold text-accent hover:text-accent-strong"
+              >
+                Upgrade
+              </button>
+            ) : null}
+          </div>
+        ) : null}
         <main>{children}</main>
       </div>
     </div>
