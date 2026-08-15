@@ -5,6 +5,7 @@ import { AppError } from "../utils/appError.js"
 import { getFirstZodMessage } from "../utils/zodErrors.js"
 import { CreateClientSchema, DeleteClientSchema, GetSingleClientSchena, UpdateClientSchema } from "../validation/clients.validation.js"
 import { clientsFilter } from "../utils/clients.utils.js"
+import { expireOrganizationSubscription } from "./subscription.services.js"
 
 export const createClient = async (data: unknown) => {
     const parsed = CreateClientSchema.safeParse(data)
@@ -18,6 +19,8 @@ export const createClient = async (data: unknown) => {
         barangay,province,region,currency,company,taxId,addressLine1,
         addressLine2,city,state,postalCode,country,notes
      } = parsed.data
+
+     await expireOrganizationSubscription(organizationId)
 
      const [organization] = await db.select({
         plan: organizations.plan

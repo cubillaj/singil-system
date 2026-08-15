@@ -6,6 +6,7 @@ import { CreateProductSchema, DeleteProductSchema, GetSingleProductSchema, Updat
 import { getFirstZodMessage } from "../utils/zodErrors.js"
 import { id } from "zod/locales"
 import { productFilter } from "../utils/product.utils.js"
+import { expireOrganizationSubscription } from "./subscription.services.js"
 
 
 
@@ -24,6 +25,8 @@ export const createProduct = async (organizationId: number ,data: unknown) => {
     if (typeof organizationId !== 'number') {
         throw new AppError('Invalid data', 400)
     }
+
+    await expireOrganizationSubscription(organizationId)
 
     const organization = await db.query.organizations.findFirst({
         where: eq(organizations.id, organizationId),

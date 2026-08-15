@@ -25,4 +25,24 @@ export const scheduleRecurringInvoiceJob = async () => {
             }
         }
     )
+
+    await recurringInvoiceQueue.upsertJobScheduler(
+        "daily-subscription-expiration",
+        {
+            pattern: "5 0 * * *"
+        },
+        {
+            name: "expire-due-subscriptions",
+            data: {},
+            opts: {
+                attempts: 5,
+                backoff: {
+                    type: "exponential",
+                    delay: 5_000
+                },
+                removeOnComplete: 100,
+                removeOnFail: 500
+            }
+        }
+    )
 }

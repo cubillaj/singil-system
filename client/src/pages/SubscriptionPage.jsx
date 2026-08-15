@@ -51,6 +51,7 @@ export function SubscriptionPage({ user, onUpdated }) {
   const subscription = user?.organization?.subscription
   const currentPlan = subscription?.plan ?? user?.organization?.plan ?? 'free'
   const currentStatus = subscription?.status ?? 'active'
+  const hasActiveBillingPeriod = currentPlan !== 'free' && currentStatus === 'active'
 
   const currentPlanData = useMemo(
     () => plans.find((plan) => plan.id === currentPlan) ?? plans[0],
@@ -107,8 +108,14 @@ export function SubscriptionPage({ user, onUpdated }) {
           </div>
 
           <div className="grid gap-1 text-sm text-muted md:text-right">
-            <p>Current period starts: {formatDate(subscription?.currentPeriodStart)}</p>
-            <p>Current period ends: {formatDate(subscription?.currentPeriodEnd ?? subscription?.expiresAt)}</p>
+            {hasActiveBillingPeriod ? (
+              <>
+                <p>Current period starts: {formatDate(subscription?.currentPeriodStart)}</p>
+                <p>Current period ends: {formatDate(subscription?.currentPeriodEnd ?? subscription?.expiresAt)}</p>
+              </>
+            ) : (
+              <p>No active billing period</p>
+            )}
           </div>
         </div>
 
