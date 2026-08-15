@@ -301,24 +301,69 @@ export const deleteRecurringInvoice = async (ids: unknown) => {
   return deletedRecurringInvoice;
 };
 
+const skipMissedRecurringPeriods = async (recurringInvoice: {
+  id: number;
+  interval: "weekly" | "monthly" | "quarterly" | "yearly";
+  nextIssueDate: Date;
+  endDate: Date | null;
+}) => {
+  const now = new Date();
+  let nextIssueDate = recurringInvoice.nextIssueDate;
+
+  while (nextIssueDate <= now) {
+    nextIssueDate = addRecurringInterval(nextIssueDate, recurringInvoice.interval);
+  }
+
+  const isActive = !recurringInvoice.endDate || nextIssueDate <= recurringInvoice.endDate;
+
+  await db.update(recurringInvoices)
+    .set({
+      nextIssueDate,
+      isActive,
+      updatedAt: now,
+    })
+    .where(eq(recurringInvoices.id, recurringInvoice.id));
+};
+
 export const generateDueRecurringInvoices = async () => {
   const dueRecurringInvoices = await db.query.recurringInvoices.findMany({
     where: and(
       eq(recurringInvoices.isActive, true),
-      eq(recurringInvoices.autoSend, true),
       lte(recurringInvoices.nextIssueDate, new Date())
     ),
     columns: {
       id: true,
       organizationId: true,
-      createdById: true
+      createdById: true,
+      interval: true,
+      nextIssueDate: true,
+      endDate: true,
+      autoSend: true
     }
   })
 
   const results = []
+  const recurringAccessByOrganization = new Map<number, boolean>()
 
   for ( const recurringInvoice of dueRecurringInvoices) {
     try {
+      let hasRecurringAccess = recurringAccessByOrganization.get(recurringInvoice.organizationId)
+
+      if (hasRecurringAccess === undefined) {
+        const entitlements = await getOrganizationEntitlements(recurringInvoice.organizationId)
+        hasRecurringAccess = entitlements.recurringInvoices
+        recurringAccessByOrganization.set(recurringInvoice.organizationId, hasRecurringAccess)
+      }
+
+      if (!hasRecurringAccess) {
+        await skipMissedRecurringPeriods(recurringInvoice)
+        continue
+      }
+
+      if (!recurringInvoice.autoSend) {
+        continue
+      }
+
       const invoice = await generateInvoiceFromRecurring({
         recurringInvoiceId: recurringInvoice.id,
         organizationId: recurringInvoice.organizationId,
@@ -327,6 +372,11 @@ export const generateDueRecurringInvoices = async () => {
 
       results.push(invoice)
     } catch (error) {
+      if (error instanceof AppError && error.statusCode === 403) {
+        await skipMissedRecurringPeriods(recurringInvoice)
+        continue;
+      }
+
       if (error instanceof AppError && error.statusCode === 409) {
         continue;
       }
