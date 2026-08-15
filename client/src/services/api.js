@@ -200,6 +200,8 @@ export const recurringInvoiceApi = {
 
 export const subscriptionApi = {
   plans: () => apiRequest('/api/subscription/plans'),
+  cancel: () => apiRequest('/api/subscription/cancel', { method: 'POST' }),
+  resume: () => apiRequest('/api/subscription/resume', { method: 'POST' }),
   checkout: (payload) => apiRequest('/api/subscription', {
     method: 'POST',
     body: JSON.stringify(payload),

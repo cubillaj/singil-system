@@ -104,6 +104,7 @@ export const organizationSubscriptions = pgTable('organization_Subscriptions',{
   currentPeriodEnd: timestamp("current_period_end"),
 
   cancelledAt: timestamp("cancelled_at"),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false).notNull(),
   expiresAt: timestamp("expires_at"),
 
   provider: varchar("provider", { length: 50 }), // paymongo, stripe, manual

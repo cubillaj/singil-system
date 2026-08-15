@@ -104,6 +104,7 @@ const expireSubscriptions = async (organizationId?: number) => {
       .set({
         plan: "free",
         status: "expired",
+        cancelAtPeriodEnd: false,
         updatedAt: now,
       })
       .where(and(...filters))
@@ -132,6 +133,85 @@ export const expireOrganizationSubscription = async (organizationId: number) => 
 };
 
 export const expireDueSubscriptions = async () => expireSubscriptions();
+
+export const cancelSubscriptionAtPeriodEnd = async (organizationId: number) => {
+  await expireOrganizationSubscription(organizationId);
+
+  const subscription = await db.query.organizationSubscriptions.findFirst({
+    where: eq(organizationSubscriptions.organizationId, organizationId),
+  });
+
+  if (!subscription || subscription.plan === "free") {
+    throw new AppError("There is no paid subscription to cancel.", 409);
+  }
+
+  if (subscription.status === "cancelled" && subscription.cancelAtPeriodEnd) {
+    throw new AppError("Subscription cancellation is already scheduled.", 409);
+  }
+
+  if (subscription.status !== "active") {
+    throw new AppError("Only an active subscription can be cancelled.", 409);
+  }
+
+  if (!subscription.expiresAt || subscription.expiresAt <= new Date()) {
+    throw new AppError("The subscription does not have an active billing period.", 409);
+  }
+
+  const [cancelledSubscription] = await db.update(organizationSubscriptions)
+    .set({
+      status: "cancelled",
+      cancelAtPeriodEnd: true,
+      cancelledAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(and(
+      eq(organizationSubscriptions.id, subscription.id),
+      eq(organizationSubscriptions.status, "active")
+    ))
+    .returning();
+
+  if (!cancelledSubscription) {
+    throw new AppError("Subscription status changed before cancellation could be saved.", 409);
+  }
+
+  return cancelledSubscription;
+};
+
+export const resumeSubscription = async (organizationId: number) => {
+  await expireOrganizationSubscription(organizationId);
+
+  const subscription = await db.query.organizationSubscriptions.findFirst({
+    where: eq(organizationSubscriptions.organizationId, organizationId),
+  });
+
+  if (!subscription || subscription.status !== "cancelled" || !subscription.cancelAtPeriodEnd) {
+    throw new AppError("There is no scheduled cancellation to resume.", 409);
+  }
+
+  if (!subscription.expiresAt || subscription.expiresAt <= new Date()) {
+    throw new AppError("The subscription billing period has already ended.", 409);
+  }
+
+  const [resumedSubscription] = await db.update(organizationSubscriptions)
+    .set({
+      status: "active",
+      cancelAtPeriodEnd: false,
+      cancelledAt: null,
+      updatedAt: new Date(),
+    })
+    .where(and(
+      eq(organizationSubscriptions.id, subscription.id),
+      eq(organizationSubscriptions.status, "cancelled"),
+      eq(organizationSubscriptions.cancelAtPeriodEnd, true)
+    ))
+    .returning();
+
+  if (!resumedSubscription) {
+    throw new AppError("Subscription status changed before it could be resumed.", 409);
+  }
+
+  return resumedSubscription;
+};
 
 export const getEffectiveSubscription = async (
   organizationId: number

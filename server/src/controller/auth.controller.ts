@@ -246,6 +246,8 @@ export const me = async (req: Request, res: Response, next: NextFunction) => {
                 currentPeriodStart: true,
                 currentPeriodEnd: true,
                 expiresAt: true,
+                cancelledAt: true,
+                cancelAtPeriodEnd: true,
               }
             }
           }
