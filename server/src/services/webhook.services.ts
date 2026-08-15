@@ -176,6 +176,7 @@ export const handlePayMongoWebhook = async ({ rawBody, signatureHeader }: PayMon
           currentPeriodEnd,
           expiresAt: currentPeriodEnd,
           cancelledAt: null,
+          cancelAtPeriodEnd: false,
           updatedAt: new Date(),
         })
         .where(eq(organizationSubscriptions.id, paymentRecord.subscriptionId));

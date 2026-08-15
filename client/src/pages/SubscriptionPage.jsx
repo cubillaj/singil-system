@@ -6,6 +6,7 @@ import { PageHeader } from '../components/PageHeader'
 import { subscriptionApi } from '../services/api'
 import { formatDate } from '../utils/format'
 import { usePlanCatalog } from '../hooks/usePlanCatalog'
+import { Modal } from '../components/Modal'
 
 const planRank = {
   free: 0,
@@ -24,12 +25,17 @@ function planButtonLabel({ isCurrent, isFree, isDowngrade, isLoading, planName }
 export function SubscriptionPage({ user, onUpdated }) {
   const { plans, loading: plansLoading, error: plansError } = usePlanCatalog()
   const [loadingPlan, setLoadingPlan] = useState('')
+  const [subscriptionAction, setSubscriptionAction] = useState('')
+  const [showCancelModal, setShowCancelModal] = useState(false)
   const [error, setError] = useState('')
 
   const subscription = user?.organization?.subscription
   const currentPlan = user?.organization?.effectivePlan ?? subscription?.plan ?? user?.organization?.plan ?? 'free'
   const currentStatus = subscription?.status ?? 'active'
-  const hasActiveBillingPeriod = currentPlan !== 'free' && currentStatus === 'active'
+  const hasActiveBillingPeriod = currentPlan !== 'free' && ['active', 'cancelled'].includes(currentStatus)
+  const isPaidPlan = currentPlan !== 'free'
+  const cancellationScheduled = currentStatus === 'cancelled' && subscription?.cancelAtPeriodEnd
+  const periodEnd = subscription?.currentPeriodEnd ?? subscription?.expiresAt
 
   const currentPlanData = useMemo(
     () => plans.find((plan) => plan.id === currentPlan),
@@ -65,6 +71,35 @@ export function SubscriptionPage({ user, onUpdated }) {
     }
   }
 
+  const cancelSubscription = async () => {
+    setError('')
+    setSubscriptionAction('cancel')
+
+    try {
+      await subscriptionApi.cancel()
+      setShowCancelModal(false)
+      await onUpdated?.()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSubscriptionAction('')
+    }
+  }
+
+  const resumeSubscription = async () => {
+    setError('')
+    setSubscriptionAction('resume')
+
+    try {
+      await subscriptionApi.resume()
+      await onUpdated?.()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSubscriptionAction('')
+    }
+  }
+
   return (
     <section>
       <PageHeader
@@ -83,6 +118,11 @@ export function SubscriptionPage({ user, onUpdated }) {
             <p className="mt-1 text-sm text-muted">
               Status: <span className="capitalize text-ink">{currentStatus}</span>
             </p>
+            {cancellationScheduled ? (
+              <p className="mt-2 text-sm text-amber-700">
+                Cancellation scheduled. Paid access remains available until {formatDate(periodEnd)}.
+              </p>
+            ) : null}
           </div>
 
           <div className="grid gap-1 text-sm text-muted md:text-right">
@@ -94,6 +134,29 @@ export function SubscriptionPage({ user, onUpdated }) {
             ) : (
               <p>No active billing period</p>
             )}
+            {isPaidPlan ? (
+              <div className="mt-3 flex justify-start gap-2 md:justify-end">
+                {cancellationScheduled ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={Boolean(subscriptionAction)}
+                    onClick={resumeSubscription}
+                  >
+                    {subscriptionAction === 'resume' ? 'Resuming...' : 'Resume subscription'}
+                  </Button>
+                ) : currentStatus === 'active' ? (
+                  <Button
+                    type="button"
+                    variant="danger"
+                    disabled={Boolean(subscriptionAction)}
+                    onClick={() => setShowCancelModal(true)}
+                  >
+                    Cancel subscription
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -148,6 +211,17 @@ export function SubscriptionPage({ user, onUpdated }) {
           })}
         </div>
       </div>
+      <Modal
+        open={showCancelModal}
+        tone="danger"
+        title="Cancel subscription?"
+        message={`Your ${currentPlanData?.name ?? currentPlan} access will remain active until ${formatDate(periodEnd)}, then your organization will move to the Free plan.`}
+        confirmText={subscriptionAction === 'cancel' ? 'Cancelling...' : 'Cancel subscription'}
+        cancelText="Keep subscription"
+        onConfirm={cancelSubscription}
+        onCancel={() => setShowCancelModal(false)}
+        onClose={() => setShowCancelModal(false)}
+      />
     </section>
   )
 }
