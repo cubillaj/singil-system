@@ -199,6 +199,7 @@ export const recurringInvoiceApi = {
 }
 
 export const subscriptionApi = {
+  plans: () => apiRequest('/api/subscription/plans'),
   checkout: (payload) => apiRequest('/api/subscription', {
     method: 'POST',
     body: JSON.stringify(payload),

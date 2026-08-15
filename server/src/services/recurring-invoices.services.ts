@@ -13,6 +13,15 @@ import {
   UpdateRecurringInvoiceSchema,
   type CreateRecurringInvoice,
 } from "../validation/recurring-invoices.validation.js";
+import { getOrganizationEntitlements } from "./subscription.services.js";
+
+const requireRecurringInvoices = async (organizationId: number) => {
+  const entitlements = await getOrganizationEntitlements(organizationId);
+
+  if (!entitlements.recurringInvoices) {
+    throw new AppError("Recurring invoices require the Pro or Business plan.", 403);
+  }
+};
 
 type AuthIds = {
   userId: number;
@@ -51,6 +60,7 @@ const assertClientBelongsToOrganization = async (clientId: number, organizationI
 };
 
 export const createRecurringInvoice = async (ids: AuthIds, data: unknown) => {
+  await requireRecurringInvoices(ids.organizationId);
   const payload = typeof data === "object" && data !== null ? data : {};
   const parsed = CreateRecurringInvoiceSchema.safeParse({
     ...payload,
@@ -119,6 +129,8 @@ export const getRecurringInvoices = async (organizationId: number, query: unknow
     throw new AppError("Organization id is required", 400);
   }
 
+  await requireRecurringInvoices(organizationId);
+
   const {
     filters,
     offSet,
@@ -169,6 +181,8 @@ export const getSingleRecurringInvoice = async (ids: unknown) => {
 
   const { recurringInvoiceId, organizationId } = parsed.data;
 
+  await requireRecurringInvoices(organizationId);
+
   const recurringInvoice = await db.query.recurringInvoices.findFirst({
     where: and(
       eq(recurringInvoices.id, recurringInvoiceId),
@@ -195,6 +209,7 @@ export const getSingleRecurringInvoice = async (ids: unknown) => {
 };
 
 export const updateRecurringInvoice = async (recurringInvoiceId: number, organizationId: number, data: unknown) => {
+  await requireRecurringInvoices(organizationId);
   const parsed = UpdateRecurringInvoiceSchema.safeParse(data);
 
   if (!parsed.success) {
@@ -331,6 +346,8 @@ export const generateInvoiceFromRecurring = async (ids: unknown) => {
   }
 
   const { recurringInvoiceId, organizationId, createdById } = parsed.data;
+
+  await requireRecurringInvoices(organizationId);
 
   const recurringInvoice = await db.query.recurringInvoices.findFirst({
     where: and(

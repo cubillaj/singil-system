@@ -9,10 +9,10 @@ const navItems = [
   { id: 'products', label: 'Products', icon: Package, roles: ['admin', 'member', 'owner'] },
   { id: 'invoices', label: 'Invoices', icon: FileText, roles: ['admin', 'member', 'owner'] },
   { id: 'payments', label: 'Payments', icon: ReceiptText, roles: ['admin', 'member', 'owner'] },
-  { id: 'recurring', label: 'Recurring', icon: Repeat, roles: ['admin', 'member', 'owner'] },
+  { id: 'recurring', label: 'Recurring', icon: Repeat, roles: ['admin', 'member', 'owner'], plans: ['pro', 'business'] },
   { id: 'invitations', label: 'Invitations', icon: MailPlus, roles: ['system_admin', 'admin', 'owner'] },
   { id: 'organization', label: 'Organization', icon: Settings, roles: ['admin', 'owner'] },
-  { id: 'audit-logs', label: 'Audit Logs', icon: ScrollText, roles: ['owner'] },
+  { id: 'audit-logs', label: 'Audit Logs', icon: ScrollText, roles: ['owner'], plans: ['business'] },
   { id: 'subscription', label: 'Subscription', icon: CreditCard, roles: ['owner'] },
   { id: 'profile', label: 'Profile', icon: CircleUser, roles: ['system_admin', 'admin', 'member', 'owner'] },
 ]
@@ -29,9 +29,11 @@ function rootPage(page) {
 }
 
 export function DashboardLayout({ user, activePage, onNavigate, onLogout, children }) {
-  const visibleNavItems = navItems.filter((item) => item.roles.includes(user?.role))
+  const currentPlan = user?.organization?.effectivePlan ?? user?.organization?.subscription?.plan ?? user?.organization?.plan ?? 'free'
+  const visibleNavItems = navItems.filter((item) => (
+    item.roles.includes(user?.role) && (!item.plans || item.plans.includes(currentPlan))
+  ))
   const selectedPage = rootPage(activePage)
-  const currentPlan = user?.organization?.subscription?.plan ?? user?.organization?.plan ?? 'free'
   const isFreePlan = currentPlan === 'free'
   const canManageSubscription = user?.role === 'owner'
 
@@ -72,7 +74,7 @@ export function DashboardLayout({ user, activePage, onNavigate, onLogout, childr
               <p className="text-sm font-semibold">Free plan</p>
             </div>
             <p className="mt-2 text-xs leading-5 text-muted">
-              Your organization is using the Free plan with limited clients, products, and invitations.
+              Your organization is using the Free plan with limits on clients, products, members, and invoices.
             </p>
             {canManageSubscription ? (
               <Button
@@ -130,7 +132,7 @@ export function DashboardLayout({ user, activePage, onNavigate, onLogout, childr
               <Sparkles size={16} className="shrink-0 text-accent" />
               <p className="truncate text-xs text-muted">
                 <span className="font-semibold text-ink">Free plan</span>
-                {' · '}Limited clients, products, and invitations
+                {' · '}Limited clients, products, members, and invoices
               </p>
             </div>
             {canManageSubscription ? (

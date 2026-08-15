@@ -1,10 +1,12 @@
 import express from 'express'
 import { requireRole } from '../middleware/auth.middleware.js'
-import { subscriptionCheckoutController } from '../controller/subscription.controller.js'
-import { sensitiveActionRateLimiter } from '../middleware/rateLiter.middleware.js'
+import { getSubscriptionPlansController, subscriptionCheckoutController } from '../controller/subscription.controller.js'
+import { readRateLimiter, sensitiveActionRateLimiter } from '../middleware/rateLiter.middleware.js'
 import { auditLogMiddleware } from '../middleware/audit-log.middleware.js'
 
 const router = express.Router()
+
+router.get('/plans', readRateLimiter, getSubscriptionPlansController)
 
 router.post('/', sensitiveActionRateLimiter, requireRole(['owner']), auditLogMiddleware({
     action: 'subscription.checkout',

@@ -5,10 +5,11 @@ import { AppError } from "../utils/appError.js";
 import { SubscriptionPaymentSchema } from "../validation/subscription.validation.js";
 import { PAYMONGO_API, payMongoAuthHeaders } from "../utils/paymongo.utils.js";
 import { getFirstZodMessage } from "../utils/zodErrors.js";
+import { getEffectiveSubscription, PLAN_CATALOG, PLAN_RANK } from "./subscription.services.js";
 
 export const subscriptionPrices = {
-  pro: "75.00",
-  business: "150.00",
+  pro: PLAN_CATALOG.pro.price,
+  business: PLAN_CATALOG.business.price,
 } as const;
 
 const toPayMongoCurrency = (currency: string) => currency === "PH" ? "PHP" : currency;
@@ -28,6 +29,18 @@ export const subscriptionCheckout = async (data: unknown) => {
   } = parsed.data;
 
   const amount = subscriptionPrices[plan];
+  const currentSubscription = await getEffectiveSubscription(organizationId);
+
+  if (plan === currentSubscription.effectivePlan) {
+    throw new AppError(`Your organization is already on the ${plan} plan.`, 409);
+  }
+
+  if (PLAN_RANK[plan] < PLAN_RANK[currentSubscription.effectivePlan]) {
+    throw new AppError(
+      "Subscription checkout can only be used for upgrades. Plan downgrades must be scheduled separately.",
+      409
+    );
+  }
 
   const [user] = await db.select({
     id: users.id,
