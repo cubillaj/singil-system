@@ -338,7 +338,7 @@ export const generateInvoiceFromRecurring = async (ids: unknown) => {
       eq(recurringInvoices.organizationId, organizationId),
     ),
     with: {
-      items: true,
+      items: true
     },
   });
 

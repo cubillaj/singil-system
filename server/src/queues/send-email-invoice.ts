@@ -1,18 +1,17 @@
 import { Queue } from "bullmq";
 import { redisConnection } from "./redisConnection.js";
 
-export const recurringInvoiceQueue = new Queue("recurring-invoices", {
+export const emailInvoiceQueue = new Queue("email-invoices", {
     connection: redisConnection
 })
 
-export const scheduleRecurringInvoiceJob = async () => {
-    await recurringInvoiceQueue.upsertJobScheduler(
-        "daily-recurring-invoices",
+export const scheduleEmailJob = async () => {
+    await emailInvoiceQueue.upsertJobScheduler(
+        "daily-email-invoices",
         {
             pattern: "0 0 * * *"
         },
         {
-            name: "generate-due-recurring-invoices",
             data: {},
             opts: {
                 attempts: 5, 
@@ -24,5 +23,6 @@ export const scheduleRecurringInvoiceJob = async () => {
                 removeOnFail: 500
             }
         }
+
     )
 }

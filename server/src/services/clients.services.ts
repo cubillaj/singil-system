@@ -1,6 +1,6 @@
 import { and, eq, sql } from "drizzle-orm"
 import { db } from "../db/db.js"
-import { clients, organizations } from "../db/schema.js"
+import { clients, invoices, organizations, recurringInvoices } from "../db/schema.js"
 import { AppError } from "../utils/appError.js"
 import { getFirstZodMessage } from "../utils/zodErrors.js"
 import { CreateClientSchema, DeleteClientSchema, GetSingleClientSchena, UpdateClientSchema } from "../validation/clients.validation.js"
@@ -219,6 +219,30 @@ export const deleteClient = async (ids: unknown) => {
 
     if(!existingClient) {
         throw new AppError('Client not found', 404)
+    }
+
+    const [[existingInvoice], [existingRecurringInvoice]] = await Promise.all([
+        db.select({ id: invoices.id })
+            .from(invoices)
+            .where(and(
+                eq(invoices.clientId, clientId),
+                eq(invoices.organizationId, organizationId)
+            ))
+            .limit(1),
+        db.select({ id: recurringInvoices.id })
+            .from(recurringInvoices)
+            .where(and(
+                eq(recurringInvoices.clientId, clientId),
+                eq(recurringInvoices.organizationId, organizationId)
+            ))
+            .limit(1)
+    ])
+
+    if (existingInvoice || existingRecurringInvoice) {
+        throw new AppError(
+            'This client cannot be deleted because it has invoices or recurring invoice schedules. Delete those records first.',
+            409
+        )
     }
 
     const [deletedClient] = await db.delete(clients)
