@@ -9,6 +9,7 @@ import { LoginSchema, RegisterSchema } from "../validation/auth.validation.js";
 import { createSlug } from "../utils/slug.js";
 import { getFirstZodMessage } from "../utils/zodErrors.js";
 import { getEffectiveSubscription } from "../services/subscription.services.js";
+import { clearLoginEmailFailures, recordLoginFailure, respondToLoginRateLimit } from "../middleware/rateLiter.middleware.js";
 const saltRounds = 12;
 
 function sanitizeUser(user: User) {
@@ -173,15 +174,25 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       }
     });
 
-    if (!user) {
+    const passwordMatches = user
+      ? await bcrypt.compare(parsed.data.password, user.passwordHash)
+      : false;
+
+    if (!user || !passwordMatches) {
+      const limit = await recordLoginFailure(req, parsed.data.email);
+
+      if (limit.blocked) {
+        return respondToLoginRateLimit(res, limit.retryAfterMs);
+      }
+
+      if (limit.delayMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, limit.delayMs));
+      }
+
       throw new AppError("Invalid email or password", 401);
     }
 
-    const passwordMatches = await bcrypt.compare(parsed.data.password, user.passwordHash);
-
-    if (!passwordMatches) {
-      throw new AppError("Invalid email or password", 401);
-    }
+    await clearLoginEmailFailures(parsed.data.email);
 
     const session = await createAuthSession(req, {
       userId: user.id,
