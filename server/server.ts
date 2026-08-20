@@ -24,6 +24,7 @@ import dashboardRoutes from './src/routes/dashboard.routes.js'
 import auditLogRoutes from './src/routes/audit-log.routes.js'
 import { webhookRateLimiter } from './src/middleware/rateLiter.middleware.js'
 const app = express();
+app.set('trust proxy', 1)
 
 const devOrigins = ['http://localhost:5173', 'http://localhost:5174']
 
@@ -36,7 +37,6 @@ app.use(cors({
 app.use("/api/webhooks", webhookRateLimiter, webhookRoutes)
 app.use(express.json());
 app.use(cookieParser())
-app.set('trust proxy', 1)
 app.use(sessionMiddleware)
 app.use("/api/auth", authRoutes)
 app.use("/api/users", usersRoutes)
